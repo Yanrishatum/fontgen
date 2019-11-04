@@ -77,3 +77,15 @@ Windows note: Make sure you are running in msvc envrionment, sicne ammer needs i
 Ammer note: You probably will need to point at hashlink includes and lib files with `-D ammer.hl.hlInclude=<path-to-hashlink>/include -D ammer.hl.hlLibrary=<path-to-hashlink>`, see ammer lib for more details.
 * Put `msdfgen.dll` from `native` and `ammer_msdfgen.hdll` from `native/hl` near `bin/fontgen.hl`
 * You're good to go.
+
+# License
+* Source code is licensed under MIT
+* `HxTrueType` license is unknown, but source code on which it is based is under BSD-3.
+* `ammer`, `bin-packing` and `msdfgen` are under MIT
+* Londinia font in text samples is owned by K-Type: https://www.k-type.com/fonts/londinia/
+* Msdfgen dependencies
+  * `FreeType` - GPL2
+  * `lodepng` - Zlib
+  * `tinyxml` - Zlib
+
+Welcome to licensing hell.
