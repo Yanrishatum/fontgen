@@ -1,0 +1,6 @@
+common.hxml
+# -D ammer.hl.hlInclude=E:/HaxeToolkit/hl/include
+# -D ammer.hl.hlLibrary=E:/HaxeToolkit/hl
+-D ammer.hl.build=native/hl
+-D ammer.hl.output=bin/
+-hl bin/fontgen.hl

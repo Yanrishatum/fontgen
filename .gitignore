@@ -1,0 +1,9 @@
+.vscode
+bin
+*.hl
+*.dll
+*.lib
+*.exp
+*.obj
+test/output/*
+native/hl/*

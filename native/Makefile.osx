@@ -1,0 +1,12 @@
+all: libmsdfgen.dylib msdfgen.o
+
+libmsdfgen.dylib: msdfgen.c
+	gcc -dynamiclib -o libmsdfgen.dylib msdfgen.c
+
+msdfgen.so: msdfgen.o
+	gcc -shared -fPIC -o msdfgen.so msdfgen.o -lc
+
+msdfgen.o: msdfgen.c
+	gcc -c -fPIC -o msdfgen.o msdfgen.c
+
+.PHONY: all

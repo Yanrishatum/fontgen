@@ -1,0 +1,49 @@
+[
+	{
+		"inputs": ["ttf/Londinia-Regular.ttf"],
+		"output": "output/msdf.fnt",
+		"charset": [
+			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
+		],
+		"fontSize": 24,
+		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
+		"spacing": { "x": 2, "y": 2 },
+		"dfSize": 4,
+		"mode": "msdf"
+	},
+	{
+		"inputs": ["ttf/Londinia-Regular.ttf"],
+		"output": "output/sdf.fnt",
+		"charset": [
+			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
+		],
+		"fontSize": 24,
+		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
+		"spacing": { "x": 2, "y": 2 },
+		"dfSize": 4,
+		"mode": "sdf"
+	},
+	{
+		"inputs": ["ttf/Londinia-Regular.ttf"],
+		"output": "output/psdf.fnt",
+		"charset": [
+			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
+		],
+		"fontSize": 24,
+		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
+		"spacing": { "x": 2, "y": 2 },
+		"dfSize": 4,
+		"mode": "psdf"
+	},
+	{
+		"inputs": ["ttf/Londinia-Regular.ttf"],
+		"output": "output/raster.fnt",
+		"charset": [
+			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
+		],
+		"fontSize": 24,
+		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
+		"spacing": { "x": 2, "y": 2 },
+		"mode": "raster"
+	}
+]

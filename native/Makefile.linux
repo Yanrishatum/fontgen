@@ -1,0 +1,9 @@
+all: libmsdfgen.so msdfgen.o
+
+libmsdfgen.so: msdfgen.o
+	gcc -shared -fPIC -o libmsdfgen.so msdfgen.o -lc
+
+msdfgen.o: msdfgen.c
+	gcc -c -fPIC -o msdfgen.o msdfgen.c
+
+.PHONY: all

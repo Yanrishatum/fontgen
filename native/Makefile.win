@@ -1,0 +1,9 @@
+all: msdfgen.dll
+
+msdfgen.dll: msdfgen.obj
+	cl /LD /MD msdfgen.obj "msdfgen\msdfgen.lib" "msdfgen\freetype\win32\freetype.lib"
+
+msdfgen.obj: msdfgen.cpp
+	cl /c /MD msdfgen.cpp /I .
+
+.PHONY: all

@@ -1,0 +1,6 @@
+-lib heaps
+-lib hlsdl
+-cp test
+-D resourcesPath=test/output
+-main TestMain
+-hl test/test.hl
