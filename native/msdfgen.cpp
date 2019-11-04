@@ -113,17 +113,19 @@ LIB_EXPORT bool rasterizeGlyph(int charcode, int width, int height, int ox, int 
 	if (loadGlyph(glyph, font, charcode)) {
 		glyph.normalize();
 		edgeColoringSimple(glyph, 3, 0);
-		int dfSize = 6;
+		const int dfSize = 6;
+		const int pad = 4;
+		int halfDF = (dfSize>>1) + (pad>>1);
 		Bitmap<float, 3> msdf(width+dfSize, height+dfSize);
-		generateMSDF(msdf, glyph, dfSize / scale, scale, Vector2(tx+(dfSize>>1), ty+(dfSize>>1)));
-		Bitmap<float, 1> raster(width, height);
+		generateMSDF(msdf, glyph, dfSize / scale, scale, Vector2(tx+halfDF-1.5, ty+halfDF-1.5));
+		Bitmap<float, 1> raster(width+dfSize, height+dfSize);
 		renderSDF(raster, msdf, dfSize);
 		
 		oy = atlasPixels.height() - height - oy;
 		for (int y = 0; y < height; y++) {
 			float* it = atlasPixels(ox, oy + y);
 			for (int x = 0; x < width; x++) {
-				float px = *raster(x, y);
+				float px = *raster(x+halfDF, y+halfDF);
 				*it++ = px;
 				*it++ = px;
 				*it++ = px;
