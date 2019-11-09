@@ -18,25 +18,41 @@ class TestMain extends hxd.App {
 	override function init()
 	{
 		super.init();
-		Sys.setCwd("bin");
-		var result = Sys.command("hl", ["fontgen.hl", "-verbose", "../test/config.json"]);
-		trace(result);
-		Sys.setCwd("..");
+		
+		// Sys.setCwd("bin");
+		// var result = Sys.command("hl", ["fontgen.hl", "-verbose", "../test/config.json"]);
+		// trace(result);
+		// Sys.setCwd("..");
+		
 		var f = new Flow(s2d);
 		f.layout = Vertical;
 		
+		var txts:Array<Text> = [];
 		function makeText(label:String, fnt:Font)
 		{
 			var txt = new MetricText(fnt, f);
+			txts.push(txt);
 			txt.letterSpacing = 0;
-			txt.text = label + ": A quick brown fox jumps over the lazy dog. 0123456789";
+			txt.smooth = true;
+			txt.text = label + "A quick brown fox jumps over the lazy dog. 0123456789 ~!@#$%^&*()_+=-[]{};'\\:\"|,./<>?";
 		}
-		makeText("MSDF", Res.load("msdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.MultiChannel, 0.5, 4/24));
-		makeText("SDF", Res.load("sdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
-		makeText("PSDF", Res.load("psdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
-		makeText("Raster", Res.load("raster.fnt").to(hxd.res.BitmapFont).toFont());
-		
-		// new Text("MSDF font\n");
+		makeText("", Res.load("msdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.MultiChannel, 0.5, 4/24));
+		makeText("", Res.load("sdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
+		makeText("", Res.load("psdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
+		makeText("", Res.load("raster.fnt").to(hxd.res.BitmapFont).toFont());
+		var slider = new h2d.Slider(200, 10, f);
+		slider.minValue = 0;
+		slider.maxValue = 1;
+		slider.value = 4 / 24;
+		slider.onChange = function() {
+			for (txt in txts) {
+				@:privateAccess {
+					if (txt.sdfShader != null) {
+						txt.sdfShader.smoothing = slider.value;
+					}
+				}
+			}
+		}
 	}
 	
 }

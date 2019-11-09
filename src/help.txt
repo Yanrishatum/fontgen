@@ -1,0 +1,33 @@
+Fontgen v1.0.0 - command-line TTF/OTF rasterizer with SDF support
+=================================================================
+Usage:
+{{exe}} <path-to-config.json> [flags]
+
+Available flags:
+  -help         : Prints this text.
+  -info         : Print extra information on processing.
+  -timings      : Print processing timings.
+  -printmissing : Print all characters that could not be drawn
+  -nowarnings   : Suppress warnings
+  -verbose      : Enables all logging flags.
+  -silent       : Disables all logging flags.
+
+Config json sample:
+{
+  "input": "primary/font.ttf",
+  "inputs": ["fallback/font.ttf"],
+  "output": "result.fnt",
+  "mode": "msdf",
+  "dfSize": 6,
+  "charset": [
+    "latin", "latin1 supplement",
+    "私は日本語が話せません", "path/to.xml", "path/to.txt"
+  ],
+  "fontSize": 24,
+  "padding": { "top": 1, "bottom": 1, "left": 1, "right": 1 },
+  "spacing": { "x": 2, "y": 2 }
+}
+File can be either one config of an array of multiple configs.
+
+For more information and newest version visit github repo:
+https://github.com/Yanrishatum/fontgen

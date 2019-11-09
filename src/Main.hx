@@ -4,8 +4,6 @@ import haxe.Json;
 import haxe.io.Path;
 import binpacking.MaxRectsPacker;
 import GlyphRender;
-import haxe.io.Bytes;
-import format.ttf.Reader;
 import msdfgen.Msdfgen;
 
 class Main {
@@ -25,18 +23,26 @@ class Main {
 		var configs = readInput();
 		
 		inline function ts() return haxe.Timer.stamp();
+		inline function timeStr(ts:Float) return Std.string(Math.round(ts * 1000)) + "ms";
 		
 		var start = ts();
 		Msdfgen.initializeFreetype();
 		
 		for (config in configs) {
 			
+			var rasterMode = config.mode == "raster";
+			var dfSize = rasterMode ? 0 : config.dfSize;
+			var halfDF = (dfSize * .5);
+			var fontSize = config.fontSize;
+			
 			if (info) {
 				Sys.println("[Info] Rendering mode: " + config.mode);
 				Sys.println("[Info] Font size: " + config.fontSize);
-				Sys.println("[Info] SDF size: " + config.dfSize);
+				if (!rasterMode) Sys.println("[Info] SDF size: " + config.dfSize);
 				Sys.println("[Info] Output format: text .fnt");
 			}
+			
+			Msdfgen.setParameters(dfSize, fontSize);
 			
 			var stamp = ts();
 			var renderers:Array<GlyphRender> = [];
@@ -45,7 +51,7 @@ class Main {
 				renderers.push(new GlyphRender(inp));
 			}
 			var ttfParse = ts();
-			if (timings) Sys.println("[Timing] Parsed ttf: " + (ttfParse - stamp));
+			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
 			
 			// Find all corresponding glyphs to render.
 			var missing:Array<Int> = [];
@@ -82,78 +88,77 @@ class Main {
 				}
 			}
 			if (info) Sys.println('[Info] Rendering ${inserted.length} glyphs');
-			if (timings) Sys.println("[Timing] Glyph lookup: " + (charsetProcess - ttfParse));
-			
-			// var dfSize = (config.dfSize + 1) >> 1 << 1;
-			var dfSize = config.dfSize;
-			var halfDF = (dfSize * .5);
-			var fontSize = config.fontSize;
+			if (timings) Sys.println("[Timing] Glyph lookup: " + timeStr(charsetProcess - ttfParse));
 			
 			var extendWidth = config.padding.left + config.padding.right + dfSize + config.spacing.x;
 			var extendHeight = config.padding.top + config.padding.bottom + dfSize + config.spacing.y;
 			
 			packGlyphs(glyphs, fontSize, extendWidth, extendHeight);
-			// glyphs.sort(glyphSort)
+			
+			extendWidth -= config.spacing.x;
+			extendHeight -= config.spacing.y;
 			
 			var glyphPacking = ts();
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
-			if (timings) Sys.println("[Timing] Glyph packing: " + (glyphPacking - charsetProcess));
+			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
 			
-			Msdfgen.beginAtlas(atlasWidth, atlasHeight);
+			Msdfgen.beginAtlas(atlasWidth, atlasHeight, rasterMode ? 0 : 0xff);
 			var paddingLeft = config.padding.left;
 			var paddingTop = config.padding.top;
 			var paddingBottom = config.padding.bottom;
+			var dfCorrX, dfCorrY;
+			if (rasterMode) {
+				dfCorrX = halfDF;
+				dfCorrY = halfDF;
+			} else {
+				dfCorrX = halfDF - 0.5;
+				dfCorrY = halfDF - 0.5;
+			}
 			
 			for (renderer in renderers) {
 				if (renderer.renderGlyphs.length == 0) continue;
-				Msdfgen.loadFont(renderer.file);
-				Msdfgen.setParameters(dfSize, fontSize / (renderer.unitsPerEm / 64));
 				if (info)
 					Sys.println("[Info] Started rendering glyphs from " + renderer.file);
 				
 				
-				inline function adjustRect(g:GlyphInfo) {
-					g.rect.width -= config.spacing.x;
-					g.rect.height -= config.spacing.y;
-				}
-				inline function glyphWidth(g:GlyphInfo) return Std.int(g.rect.width);
-				inline function glyphHeight(g:GlyphInfo) return Std.int(g.rect.height);
+				inline function glyphWidth(g:GlyphInfo) return g.width + extendWidth;
+				inline function glyphHeight(g:GlyphInfo) return g.height + extendHeight;
 				inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
 				inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-				inline function translateX(g:GlyphInfo) return Math.ffloor(halfDF - renderer.toHPixel(g.xMin, fontSize)) + paddingLeft;
-				inline function translateY(g:GlyphInfo) return Math.ffloor(halfDF + 1e-10 - renderer.toHPixel(g.yMin, fontSize)) + paddingBottom; // renderer.toHPixel(g.yMin, fontSize)
+				inline function translateX(g:GlyphInfo) return Math.ceil(halfDF) - 0.5 - g.xOffset + paddingLeft;
+				inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
 				
 				switch (config.mode) {
 					case "msdf":
 						for (g in renderer.renderGlyphs) {
-							adjustRect(g);
-							Msdfgen.generateMSDFGlyph(g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+							if (g.width != 0 && g.height != 0)
+								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
 						}
 					case "sdf":
 						for (g in renderer.renderGlyphs) {
-							adjustRect(g);
-							Msdfgen.generateSDFGlyph(g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+							if (g.width != 0 && g.height != 0)
+								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
 						}
 					case "psdf":
 						for (g in renderer.renderGlyphs) {
-							adjustRect(g);
-							Msdfgen.generatePSDFGlyph(g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+							if (g.width != 0 && g.height != 0)
+								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
 						}
 					case "raster":
 						for (g in renderer.renderGlyphs) {
-							adjustRect(g);
-							Msdfgen.rasterizeGlyph(g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+							if (g.width != 0 && g.height != 0)
+								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g) + paddingLeft, canvasY(g) + paddingTop);
 						}
 				}
-				Msdfgen.unloadFont();
 			}
+			
 			var pngPath = Path.withExtension(config.output, "png");
 			Msdfgen.endAtlas(pngPath);
 			var glyphRendering = ts();
-			if (info)
-				Sys.println("[Info] Writing PNG file to " + pngPath);
-			if (timings) Sys.println("[Timing] Glyph rendering: " + (glyphRendering - glyphPacking));
+			if (info) Sys.println("[Info] Writing PNG file to " + pngPath);
+			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
 			
+			// TODO: Optimize: Start building file right away.
 			var file = new FntFile();
 			var base = renderers[0];
 			file.face = base.fontName;
@@ -172,46 +177,59 @@ class Main {
 			file.textureWidth = atlasWidth;
 			file.textureHeight = atlasHeight;
 			file.outline = 0;
-			file.base = Math.ceil((base.baseLine / base.fontHeight) * fontSize);
-			file.lineHeight = Math.ceil((base.lineHeight / base.fontHeight) * fontSize);
+			file.base = base.baseLine;
+			file.lineHeight = base.lineHeight;
 			
 			for (g in glyphs) {
 				file.chars.push({
 					id: g.char,
 					x: Std.int(g.rect.x),
 					y: Std.int(g.rect.y),
-					w: Std.int(g.rect.width),
-					h: Std.int(g.rect.height),
-					xa: Math.ceil((g.advance / g.renderer.unitsPerEm) * fontSize),
-					xo: Math.ceil(-config.padding.left - halfDF + (g.xMin / g.renderer.fontHeight) * fontSize),
-					yo: Math.ceil(-config.padding.top - halfDF + file.base - g.renderer.toPixel(g.yMax - (0.5 / fontSize * g.renderer.unitsPerEm), fontSize)),
+					w: g.width + extendWidth,
+					h: g.height + extendHeight,
+					xa: g.advance,
+					xo: g.xOffset - paddingLeft - Math.ceil(halfDF),
+					yo: (file.base - g.yOffset) - paddingTop - Math.ceil(halfDF),
 				});
 			}
 			
-			for (kern in base.kernings) {
-				if (inserted.indexOf(kern.left) != -1 && inserted.indexOf(kern.right) != -1) {
-					file.kernings.push({ first: kern.left, second: kern.right, amount: Math.round((kern.value / base.fontHeight) * fontSize) });
+			final len = inserted.length;
+			for (i in 0...len) {
+				var left = glyphs[i];
+				var slot = left.renderer.slot;
+				for (j in (i+1)...len) {
+					var right = glyphs[j];
+					if (right.renderer.slot == slot) {
+						var kern = Msdfgen.getKerning(slot, left.char, right.char);
+						if (kern != 0) {
+							file.kernings.push({ first: left.char, second: right.char, amount: kern });
+						}
+						kern = Msdfgen.getKerning(slot, right.char, left.char);
+						if (kern != 0) {
+							file.kernings.push({ first: right.char, second: left.char, amount: kern });
+						}
+					}
 				}
 			}
 			
-			File.saveContent(config.output, file.writeString());
-			
+			Msdfgen.unloadFonts();
+			File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
 			
 			var ttfGen = ts();
 			if (timings) {
-				Sys.println("[Timing] FNT generation: " + (ttfGen - glyphRendering));
-				Sys.println("[Timing] Total config processing time: " + (ttfGen - stamp));
+				Sys.println("[Timing] FNT generation: " + timeStr(ttfGen - glyphRendering));
+				Sys.println("[Timing] Total config processing time: " + timeStr(ttfGen - stamp));
 			}
 			
 		}
 		
 		Msdfgen.deinitializeFreetype();
 		if (timings && configs.length > 1) {
-			Sys.println("[Timing] Total work time: " + (ts() - start));
+			Sys.println("[Timing] Total work time: " + timeStr(ts() - start));
 		}
 	}
 	
-	static function packGlyphs(glyphs:Array<GlyphInfo>, fontSize:Float, extendWidth:Int, extendHeight:Int) {
+	static function packGlyphs(glyphs:Array<GlyphInfo>, fontSize:Int, extendWidth:Int, extendHeight:Int) {
 		
 		glyphs.sort(glyphSort);
 		
@@ -219,8 +237,7 @@ class Main {
 		var xMax = 0;
 		var yMax = 0;
 		for (g in glyphs) {
-			var render = g.renderer;
-			var rect = g.rect = packer.insert(render.toIPixel(g.width, fontSize) + extendWidth, render.toIPixel(g.height, fontSize) + extendHeight, BestShortSideFit);
+			var rect = g.rect = packer.insert(g.width + extendWidth, g.height + extendHeight, BestShortSideFit);
 			var tmp = Std.int(rect.x + rect.width);
 			if (tmp > xMax) xMax = tmp;
 			tmp = Std.int(rect.y + rect.height);
@@ -232,6 +249,7 @@ class Main {
 	
 	static function readInput():Array<GenConfig> {
 		var args = Sys.args();
+		if (args.length == 0) printHelp();
 		var flags = args.filter( (a) -> a.charCodeAt(0) == '-'.code );
 		args = args.filter( (a) -> a.charCodeAt(0) != '-'.code );
 		
@@ -259,6 +277,8 @@ class Main {
 					printMissing = false;
 				case "-guessorder":
 					// TODO: Fix winding.
+				case "-help":
+					printHelp();
 			}
 		}
 		for (arg in args) {
@@ -268,7 +288,20 @@ class Main {
 			}
 			// TODO: CLI
 		}
-		return [];
+		printHelp();
+		return null;
+	}
+	
+	static function printHelp() {
+		#if (hlc || cpp)
+		final exe = Sys.systemName() == "Windows" ? "fontgen.exe" : "fontgen";
+		#elseif hl
+		final exe = "hl fontgen.hl";
+		#else
+		final exe = "{haxe eval here}";
+		#end
+		Sys.println(StringTools.replace(haxe.Resource.getString("help"), "{{exe}}", exe));
+		Sys.exit(0);
 	}
 	
 	static function jsonConfig(inp:String):Array<GenConfig> {
@@ -333,9 +366,10 @@ typedef GenConfig = {
 	var inputs:Array<String>;
 	var output:String; // path to output .fnt
 	var charset:Array<Dynamic>; // Charset info
-	var fontSize:Null<Float>;
+	var fontSize:Null<Int>;
 	var padding: { top: Null<Int>, bottom: Null<Int>, left: Null<Int>, right: Null<Int> };
 	var spacing: { x:Null<Int>, y:Null<Int> };
+	// TODO: Margin
 	var dfSize:Null<Int>;
 	var mode:String; // Generator mode
 };
