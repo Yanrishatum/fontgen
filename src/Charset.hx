@@ -12,7 +12,7 @@ class Charset {
 	//     .concat([el[1].textContent.replace(/-([A-F])/g, "_$1").replace(/(\[.*\]|[\-])/g, "").replace(/ /g, "_").toUpperCase()]) )
 	//   .map( (d) => `\tpublic static var ${d[2]} : Charset = new Charset(0x${d[0].toString(16)}, 0x${d[1].toString(16)});` )
 	//   .join("\r\n");
-	public static var BASIC_LATIN:Charset = new Charset(0x20, 0x7f); // Does not include non-printing characters, see NONPRINTING
+	public static var BASIC_LATIN:Charset = new Charset(0x20, 0x7e); // Does not include non-printing characters, see NONPRINTING
 	public static var LATIN1_SUPPLEMENT:Charset = new Charset(0x80, 0xff);
 	public static var LATIN_EXTENDED_A:Charset = new Charset(0x100, 0x17f);
 	public static var LATIN_EXTENDED_B:Charset = new Charset(0x180, 0x24f);
@@ -316,7 +316,7 @@ class Charset {
 	// Nonprinting characters are technically part of the BASIC_LATIN
 	// but they aren't printed, and usually not even present in the font file
 	// Another reason to separate is so `LATIN` charset won't complain about 32 missing characters.
-	public static var NONPRINTING:Charset = new Charset(0x0, 0x1f);
+	public static var NONPRINTING:Charset = exactRange(0x0, 0x1f).appendChar(0x7F); // 0x7F = DEL
 	
 	public static var _ALIAS:Map<String, Array<Charset>> = [
 		"LATIN" => [BASIC_LATIN],
@@ -405,6 +405,7 @@ class Charset {
 							var cset = new Charset(0, 0);
 							cset.exact = [];
 							buildXmlChars(cset, xml);
+							sets.push(cset);
 						} catch (e:Dynamic) {
 							sets.push(exactChars(txt));
 						}
@@ -453,14 +454,54 @@ class Charset {
 		}
 		return c;
 	}
+	
+	public static function exactRange(min:Int, max:Int):Charset {
+		var c = new Charset(0, 0);
+		c.exact = [];
+		for (i in min...max+1) {
+			c.exact.push(i);
+		}
+		return c;
+	}
 
 	public function new(min:Int, max:Int) {
 		this.min = min;
 		this.max = max;
 	}
+	
+	public function contains(char:Int):Bool {
+		if (exact != null) return exact.indexOf(char) != -1;
+		else return char >= min && char <= max;
+	}
 
 	public function iterator():Iterator<Int> {
-		return exact != null ? exact.iterator() : new IntIterator(min, max);
+		return exact != null ? exact.iterator() : new IntIterator(min, max+1);
+	}
+	
+	public function toExact():Charset {
+		if (exact == null) {
+			exact = [];
+			if (min != 0 || max != 0) {
+				for (i in min...max+1) {
+					exact.push(i);
+				}
+			}
+		}
+		return this;
+	}
+	
+	public function appendChar(char:Int):Charset {
+		toExact();
+		exact.push(char);
+		return this;
+	}
+	
+	public function append(other:Charset):Charset {
+		toExact();
+		for (char in other) {
+			if (exact.indexOf(char) != -1) exact.push(char);
+		}
+		return this;
 	}
 
 	public function toString() {

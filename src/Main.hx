@@ -18,6 +18,9 @@ class Main {
 	public static var timings:Bool = false;
 	public static var printMissing:Bool = false;
 	
+	public static var globalFixWinding:Bool = false;
+	public static var globalNonprint:Bool = false;
+	
 	static function main() {
 		
 		var configs = readInput();
@@ -42,7 +45,7 @@ class Main {
 				Sys.println("[Info] Output format: text .fnt");
 			}
 			
-			Msdfgen.setParameters(dfSize, fontSize);
+			Msdfgen.setParameters(dfSize, fontSize, globalFixWinding || config.options.indexOf("fixwinding") != -1);
 			
 			var stamp = ts();
 			var renderers:Array<GlyphRender> = [];
@@ -57,8 +60,10 @@ class Main {
 			var missing:Array<Int> = [];
 			var glyphs:Array<GlyphInfo> = [];
 			var inserted:Array<Int> = [];
+			var skipNonprint:Bool = config.options.indexOf("allownonprint") == -1 && !globalNonprint;
 			for ( cset in Charset.parse(config.charset) ) {
 				for (char in cset) {
+					if (skipNonprint && Charset.NONPRINTING.contains(char)) continue;
 					if (inserted.indexOf(char) != -1) continue; // Already rendering with another charset.
 					var found = false;
 					for (renderer in renderers) {
@@ -275,8 +280,10 @@ class Main {
 					info = false;
 					timings = false;
 					printMissing = false;
-				case "-guessorder":
-					// TODO: Fix winding.
+				case "-fixwinding":
+					globalFixWinding = true;
+				case "-allownonprint":
+					globalNonprint = true;
 				case "-help":
 					printHelp();
 			}
@@ -336,6 +343,12 @@ class Main {
 				if (!FileSystem.exists(inp)) throw "Input file does not exists: " + inp;
 			}
 		}
+		if ( cfg.options == null ) cfg.options = [];
+		else {
+			for (i in 0...cfg.options.length) {
+				cfg.options[i] = cfg.options[i].toLowerCase();
+			}
+		}
 		if ( cfg.output == null ) throw "Output to FNT file should be specified!";
 		if ( cfg.charset == null ) cfg.charset = ["ansi"];
 		if ( cfg.dfSize == null ) cfg.dfSize = cfg.mode == "raster" ? 0 : 6;
@@ -367,6 +380,7 @@ typedef GenConfig = {
 	var output:String; // path to output .fnt
 	var charset:Array<Dynamic>; // Charset info
 	var fontSize:Null<Int>;
+	var options:Array<String>;
 	var padding: { top: Null<Int>, bottom: Null<Int>, left: Null<Int>, right: Null<Int> };
 	var spacing: { x:Null<Int>, y:Null<Int> };
 	// TODO: Margin

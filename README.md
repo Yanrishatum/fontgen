@@ -1,6 +1,6 @@
 # Fontgen
 
-Font rasterizer for Heaps based on Msdfgen and HxTrueType. Primary target is automation of font rasterization with Signed Distance Field method.
+Font rasterizer for Heaps based on Msdfgen. Primary target is automation of font rasterization with Signed Distance Field method.
 
 ## Usage
 So far tool is built only with Hashlink VM and Windows, but with appropriate config should also work on Mac/Linux, as well as HXCPP/Eval/HLC.  
@@ -18,6 +18,7 @@ Input file should contain a JSON object or array of objects describing font rast
 	"mode": SDFMode,
 	"dfSize": Int,
 	"charset": Array<CharsetConf>,
+  "options": Array<ProcessorOption>,
 	"fontSize": Int,
 	"padding": { "top": Int, "bottom": Int, "left": Int, "right": Int },
 	"spacing": { "x": Int, "y": Int },
@@ -40,6 +41,7 @@ MSDF provides best accuracy by utilizing RGB channels, all others produce graysc
 * `fontSize` - desired font size in pixels.
 * `padding` - optional and defaults to `0`. Describes extra padding for glyphs on the texture in pixels.
 * `spacing` - optional and defaults to `1`. Describes spacing between glyphs on the texture in pixels.
+* `options` - optional list of extra configuration flags. See below.
 
 See [`test/config.json`](test/config.json) for example config.
 
@@ -52,6 +54,12 @@ See [`test/config.json`](test/config.json) for example config.
 * `-silent` - suppresses all logging.
 * `-verbose` - enables all logging.
 * `-help` - Prints [help](src/help.txt) file and exits.
+
+### Processor pptions
+All processor options can be used as switches to enable them on all configurations. For example `-fixwinding`
+
+* `fixwinding` - Adds extra winding check for glyphs to ensure they are rendered properly. Is comparably slow and disabled by default.
+* `allownonprint` - Enables rasterization of non-printing characters from range U+00 to U+1F plus U+7F (DEL). Disabled by default as to not produce warning about missing glyphs.
 
 ### .fnt file additions
 Tool adds extra line at the end of `.fnt` file describing used SDF method that would allow decoder to determine parameters that are required to render the font.  
@@ -80,9 +88,8 @@ Ammer note: You probably will need to point at hashlink includes and lib files w
 
 # License
 * Source code is licensed under MIT
-* `HxTrueType` license is unknown, but source code on which it is based is under BSD-3.
 * `ammer`, `bin-packing` and `msdfgen` are under MIT
-* Londinia font in text samples is owned by K-Type: https://www.k-type.com/fonts/londinia/
+* Sample font files are licensed under SIL Open Font License, see [LICENSE](ttf/LICENSE/) folder for their respective license files.
 * Msdfgen dependencies
   * `FreeType` - GPL2
   * `lodepng` - Zlib

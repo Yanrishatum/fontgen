@@ -1,4 +1,4 @@
-Fontgen v1.0.0 - command-line TTF/OTF rasterizer with SDF support
+Fontgen v1.1.0 - command-line TTF/OTF rasterizer with SDF support
 =================================================================
 Usage:
 {{exe}} <path-to-config.json> [flags]
@@ -12,12 +12,21 @@ Available flags:
   -verbose      : Enables all logging flags.
   -silent       : Disables all logging flags.
 
+Config options:
+  fixwinding    : Enables validation on SDF glyphs to fix ones
+                  that are inversed.
+  allownonprint : Enables rasterization of characters from
+                  range U+00..U+1F
+All options can be used as flags, for example -fixwinding will
+enable fixwinding on all configs.
+
 Config json sample:
 {
   "input": "primary/font.ttf",
   "inputs": ["fallback/font.ttf"],
   "output": "result.fnt",
   "mode": "msdf",
+  "options": ["fixwinding", "allownonprint"]
   "dfSize": 6,
   "charset": [
     "latin", "latin1 supplement",

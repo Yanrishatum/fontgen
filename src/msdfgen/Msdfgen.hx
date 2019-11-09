@@ -12,7 +12,7 @@ class Msdfgen extends Library<"msdfgen"> {
 	@:ammer.native("wrap_deinitializeFreetype")
 	public static function deinitializeFreetype():Void;
 	
-	public static function setParameters(dfRange:Float, fontSize:Int):Void;
+	public static function setParameters(dfRange:Float, fontSize:Int, fixWinding:Bool):Void;
 	public static function initFont(filename:String, metrics:NoSize<Bytes>):Int;
 	public static function unloadFonts():Void;
 	public static function getGlyphMetrics(font:Int, charcode:Int, output:NoSize<Bytes>):Bool;

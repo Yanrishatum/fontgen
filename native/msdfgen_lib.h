@@ -13,7 +13,7 @@ extern "C" {
 LIB_EXPORT bool wrap_initializeFreetype();
 LIB_EXPORT void wrap_deinitializeFreetype();
 
-LIB_EXPORT void setParameters(double dfRange, int fontSize);
+LIB_EXPORT void setParameters(double dfRange, int fontSize, bool fixWinding);
 LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data);
 LIB_EXPORT void unloadFonts();
 LIB_EXPORT bool getGlyphMetrics(int font, int charcode, unsigned char* output);

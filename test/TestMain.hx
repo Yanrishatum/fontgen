@@ -19,28 +19,25 @@ class TestMain extends hxd.App {
 	{
 		super.init();
 		
-		// Sys.setCwd("bin");
-		// var result = Sys.command("hl", ["fontgen.hl", "-verbose", "../test/config.json"]);
-		// trace(result);
-		// Sys.setCwd("..");
+		if (!Res.loader.exists("msdf.fnt")) {
+			Sys.setCwd("bin");
+			var result = Sys.command("hl", ["fontgen.hl", "-verbose", "../test/config.json"]);
+			trace(result);
+			Sys.setCwd("..");
+		}
 		
 		var f = new Flow(s2d);
 		f.layout = Vertical;
+		f.verticalSpacing = 2;
+		f.setPosition(10, 10);
+		f.maxWidth = s2d.width - 20;
+		
+		var ctrl = new Flow(f);
+		f.horizontalSpacing = 2;
 		
 		var txts:Array<Text> = [];
-		function makeText(label:String, fnt:Font)
-		{
-			var txt = new MetricText(fnt, f);
-			txts.push(txt);
-			txt.letterSpacing = 0;
-			txt.smooth = true;
-			txt.text = label + "A quick brown fox jumps over the lazy dog. 0123456789 ~!@#$%^&*()_+=-[]{};'\\:\"|,./<>?";
-		}
-		makeText("", Res.load("msdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.MultiChannel, 0.5, 4/24));
-		makeText("", Res.load("sdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
-		makeText("", Res.load("psdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
-		makeText("", Res.load("raster.fnt").to(hxd.res.BitmapFont).toFont());
-		var slider = new h2d.Slider(200, 10, f);
+		new Text(hxd.res.DefaultFont.get(), ctrl).text = "SDF Smoothing: ";
+		var slider = new h2d.Slider(200, 10, ctrl);
 		slider.minValue = 0;
 		slider.maxValue = 1;
 		slider.value = 4 / 24;
@@ -53,6 +50,22 @@ class TestMain extends hxd.App {
 				}
 			}
 		}
+		
+		function makeText(label:String, fnt:Font)
+		{
+			var txt = new MetricText(fnt, f);
+			txts.push(txt);
+			txt.letterSpacing = 0;
+			txt.smooth = true;
+			txt.text = label + ": 0123456789 `~!@#$%^&*_+=-()[]{}<>:;,.'\"\\|/?
+THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG
+the quick brown fox jumps over the lazy dog
+in-place glyphs: конкретные глифы txt: あいうえおかき xml: �□";
+		}
+		makeText("MSDF", Res.load("msdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.MultiChannel, 0.5, 4/24));
+		makeText("SDF", Res.load("sdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
+		makeText("PSDF", Res.load("psdf.fnt").to(hxd.res.BitmapFont).toSdfFont(24, SDFChannel.Red, 0.5, 4/24));
+		makeText("Raster", Res.load("raster.fnt").to(hxd.res.BitmapFont).toFont());
 	}
 	
 }
