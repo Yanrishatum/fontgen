@@ -10,6 +10,7 @@
 #include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 #include FT_SFNT_NAMES_H
+#include FT_BITMAP_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -312,12 +313,20 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 	FT_Error err = FT_Load_Char(fonts[slot]->ft, charcode, FT_LOAD_RENDER);
 	if (err) return false;
 	FT_Bitmap* bitmap = &fonts[slot]->ft->glyph->bitmap;
+	int multiplier = 1;
 	switch (bitmap->pixel_mode) {
+		case FT_PIXEL_MODE_MONO:
+			FT_Bitmap grayBtm;
+			FT_Bitmap_Init(&grayBtm);
+			FT_Bitmap_Convert(ft_lib, bitmap, &grayBtm, 1);
+			bitmap = &grayBtm;
+			multiplier = 0xff;
+			// fall trough
 		case FT_PIXEL_MODE_GRAY:
 			for (int y = 0; y < height; y++) {
 				byte* it = atlasPixels(ox, oy + y);
 				for (int x = 0; x < width; x++) {
-					float px = bitmap->buffer[(y) * bitmap->width + x];
+					unsigned char px = bitmap->buffer[(y) * bitmap->width + x] * multiplier;
 					*it++ = 0xff;
 					*it++ = 0xff;
 					*it++ = 0xff;
@@ -325,9 +334,13 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 				}
 			}
 			
+			if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
+				FT_Bitmap_Done(ft_lib, &grayBtm);
+			}
 			return true;
 			break;
 		default:
+			std::cout << "[Error] Unsupported pixel mode: " << (int)bitmap->pixel_mode << "\n";
 			// TODO: Other pixel modes
 			return false;
 	}
