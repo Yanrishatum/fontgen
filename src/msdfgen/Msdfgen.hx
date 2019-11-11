@@ -4,7 +4,7 @@ import ammer.Library;
 import haxe.io.Bytes;
 import ammer.ffi.*;
 
-class Msdfgen extends Library<"msdfgen"> {
+class Msdfgen extends Library<"msdfgen_lib"> {
 	
 	@:ammer.native("wrap_initializeFreetype")
 	public static function initializeFreetype():Bool;

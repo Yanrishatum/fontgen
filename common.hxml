@@ -2,8 +2,8 @@
 -lib bin-packing
 --resource src/help.txt@help
 -D analyzer-optimize
--D ammer.lib.msdfgen.include=native
--D ammer.lib.msdfgen.library=native
--D ammer.lib.msdfgen.headers=msdfgen_lib.h
+-D ammer.lib.msdfgen_lib.include=native
+-D ammer.lib.msdfgen_lib.library=native
+-D ammer.lib.msdfgen_lib.headers=msdfgen_lib.h
 -cp src
 -main Main
