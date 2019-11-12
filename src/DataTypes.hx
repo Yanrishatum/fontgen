@@ -6,7 +6,7 @@ enum abstract SdfMode(String) from String to String {
 	var Raster = "raster";
 	
 	public inline function validate() {
-		if (this != SDF || this != PSDF || this != MSDF || this != Raster)
+		if (this != SDF && this != PSDF && this != MSDF && this != Raster)
 			throw "Invalid render mode, allowed values are 'msdf', 'sdf', 'psdf' or 'raster'";
 	}
 	
