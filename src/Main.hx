@@ -164,26 +164,11 @@ class Main {
 			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
 			
 			// TODO: Optimize: Start building file right away.
-			var file = new FntFile();
-			var base = renderers[0];
-			file.face = base.fontName;
-			file.bold = base.bold;
-			file.italic = base.italic;
-			file.size = Math.ceil(fontSize);
-			file.dfSize = dfSize;
-			file.dfMode = config.mode;
-			file.paddingRight = config.padding.right;
-			file.paddingDown = config.padding.bottom;
-			file.paddingLeft = config.padding.left;
-			file.paddingUp = config.padding.top;
-			file.spacingX = 0;
-			file.spacingY = 0;
+			var file = new FntFile(config, renderers[0]);
+			
 			file.texture = Path.withoutDirectory(pngPath);
 			file.textureWidth = atlasWidth;
 			file.textureHeight = atlasHeight;
-			file.outline = 0;
-			file.base = base.baseLine;
-			file.lineHeight = base.lineHeight;
 			
 			for (g in glyphs) {
 				file.chars.push({

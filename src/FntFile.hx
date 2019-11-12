@@ -29,7 +29,24 @@ class FntFile {
 	
 	public var kernings:Array<{ first:Int, second:Int, amount:Int }> = [];
 	
-	public function new() {}
+	public function new(config:GenConfig, ttf:GlyphRender) {
+		dfMode = config.mode;
+		dfSize = config.dfSize;
+		size = config.fontSize;
+		paddingRight = config.padding.right;
+		paddingUp = config.padding.top;
+		paddingDown = config.padding.bottom;
+		paddingLeft = config.padding.left;
+		spacingX = config.spacing.x;
+		spacingY = config.spacing.y;
+		outline = 0;
+		
+		face = ttf.fontName;
+		bold = ttf.bold;
+		italic = ttf.italic;
+		base = ttf.baseLine;
+		lineHeight = ttf.lineHeight;
+	}
 	
 	public function writeString():String
 	{
