@@ -68,6 +68,7 @@ class GlyphRender {
 				g.yOffset = m.offsetY;
 				g.advance = m.advanceX;
 				g.descent = m.descent;
+				g.isCCW = m.ccw;
 			}
 		}
 		return g.char == -1 ? null : g;
@@ -84,6 +85,7 @@ class GlyphInfo {
 	public var yOffset:Int;
 	public var descent:Float;
 	public var advance:Int;
+	public var isCCW:Bool;
 	
 	public var rect:Rect;
 	public var renderer:GlyphRender;

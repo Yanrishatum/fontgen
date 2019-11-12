@@ -43,6 +43,7 @@ struct GlyphMetrics {
 	int offsetY;
 	int advanceX;
 	int descent;
+	int ccw;
 };
 
 FreetypeHandle* ft = NULL;
@@ -51,7 +52,6 @@ std::vector<FontSlot*> fonts;
 
 int fontSize = 24;
 double range = 4.0;
-bool fixWinding = false;
 Bitmap<byte, 4> atlasPixels;
 
 LIB_EXPORT bool wrap_initializeFreetype() {
@@ -67,10 +67,9 @@ LIB_EXPORT void wrap_deinitializeFreetype() {
 	}
 }
 
-LIB_EXPORT void setParameters(double dfRange, int _fontSize, bool _fixWinding) {
+LIB_EXPORT void setParameters(double dfRange, int _fontSize) {
 	range = dfRange;
 	fontSize = _fontSize;
-	fixWinding = _fixWinding;
 }
 
 LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data) {
@@ -145,6 +144,7 @@ LIB_EXPORT bool getGlyphMetrics(int font, int charcode, unsigned char* output) {
 	metrics->offsetY = slot->bitmap_top;
 	metrics->advanceX = (slot->advance.x + 32) >> 6;
 	metrics->descent = (slot->metrics.horiBearingY - slot->metrics.height) >> 6;
+	metrics->ccw = FT_Outline_Get_Orientation(&slot->outline);
 	// Slower alternative:
 	// FT_BBox bbox;
 	// FT_Outline_Get_CBox(&slot->outline, &bbox);
@@ -179,23 +179,7 @@ LIB_EXPORT void endAtlas(char* output) {
 	// TODO: Optimization: Save in appropriate format - grayscale (SDF/PSDF), RGB (MSDF) and RGBA for raster.
 }
 
-bool isInvalidWinding(Shape &shape) {
-	double l, b, r, t;
-	shape.bounds(l, b, r, t);
-	Point2 p(l-(r-l)-1, b-(t-b)-1);
-	double dummy;
-	SignedDistance minDistance;
-	for (std::vector<Contour>::const_iterator contour = shape.contours.begin(); contour != shape.contours.end(); ++contour) {
-		for (std::vector<EdgeHolder>::const_iterator edge = contour->edges.begin(); edge != contour->edges.end(); ++edge) {
-				SignedDistance distance = (*edge)->signedDistance(p, dummy);
-				if (distance < minDistance)
-						minDistance = distance;
-		}
-	}
-	return minDistance.distance > 0;
-}
-
-LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty) {
+LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
 	if (width == 0 || height == 0) return true;
 	
 	Shape glyph;
@@ -205,7 +189,7 @@ LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, 
 		double scale = fonts[slot]->scale;
 		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
 		oy += height;
-		if (fixWinding && isInvalidWinding(glyph)) {
+		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
 				byte* it = atlasPixels(ox, oy - y);
 				for (int x = 0; x < width; x++) {
@@ -233,7 +217,7 @@ LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, 
 	return false;
 }
 
-LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty) {
+LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
 	if (width == 0 || height == 0) return true;
 	
 	Shape glyph;
@@ -243,7 +227,7 @@ LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height,
 		double scale = fonts[slot]->scale;
 		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
 		oy += height;
-		if (fixWinding && isInvalidWinding(glyph)) {
+		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
 				byte* it = atlasPixels(ox, oy - y);
 				for (int x = 0; x < width; x++) {
@@ -271,7 +255,7 @@ LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height,
 	return false;
 }
 
-LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty) {
+LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
 	if (width == 0 || height == 0) return true;
 	Shape glyph;
 	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
@@ -281,7 +265,7 @@ LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height,
 		double scale = fonts[slot]->scale;
 		generateMSDF(msdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
 		oy += height;
-		if (fixWinding && isInvalidWinding(glyph)) {
+		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
 				byte* it = atlasPixels(ox, oy - y);
 				for (int x = 0; x < width; x++) {

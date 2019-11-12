@@ -56,9 +56,8 @@ See [`test/config.json`](test/config.json) for example config.
 * `-help` - Prints [help](src/help.txt) file and exits.
 
 ### Processor pptions
-All processor options can be used as switches to enable them on all configurations. For example `-fixwinding`
+All processor options can be used as switches to enable them on all configurations. For example `-allownonprint`
 
-* `fixwinding` - Adds extra winding check for glyphs to ensure they are rendered properly. Is comparably slow and disabled by default.
 * `allownonprint` - Enables rasterization of non-printing characters from range U+00 to U+1F plus U+7F (DEL). Disabled by default as to not produce warning about missing glyphs.
 
 ### .fnt file additions

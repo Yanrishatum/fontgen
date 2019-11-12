@@ -27,7 +27,7 @@ abstract FontMetrics(Bytes) from Bytes to Bytes {
 
 abstract GlyphMetrics(Bytes) from Bytes to Bytes {
 	
-	public static inline var SIZE:Int = 6 * 4;
+	public static inline var SIZE:Int = 7 * 4;
 	
 	public inline function new()
 		this = Bytes.alloc(SIZE);
@@ -38,6 +38,7 @@ abstract GlyphMetrics(Bytes) from Bytes to Bytes {
 	public var offsetY(get, never):Int;
 	public var advanceX(get, never):Int;
 	public var descent(get, never):Int;
+	public var ccw(get, never):Bool;
 	
 	inline function get_width() return this.getInt32(0);
 	inline function get_height() return this.getInt32(4);
@@ -45,4 +46,5 @@ abstract GlyphMetrics(Bytes) from Bytes to Bytes {
 	inline function get_offsetY() return this.getInt32(12);
 	inline function get_advanceX() return this.getInt32(16);
 	inline function get_descent() return this.getInt32(20);
+	inline function get_ccw() return this.getInt32(24) != 0;
 }

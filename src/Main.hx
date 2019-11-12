@@ -18,7 +18,6 @@ class Main {
 	public static var timings:Bool = false;
 	public static var printMissing:Bool = false;
 	
-	public static var globalFixWinding:Bool = false;
 	public static var globalNonprint:Bool = false;
 	
 	static function main() {
@@ -45,7 +44,7 @@ class Main {
 				Sys.println("[Info] Output format: text .fnt");
 			}
 			
-			Msdfgen.setParameters(dfSize, fontSize, globalFixWinding || config.options.indexOf("fixwinding") != -1);
+			Msdfgen.setParameters(dfSize, fontSize);
 			
 			var stamp = ts();
 			var renderers:Array<GlyphRender> = [];
@@ -137,17 +136,17 @@ class Main {
 					case "msdf":
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
 						}
 					case "sdf":
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
 						}
 					case "psdf":
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g));
+								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
 						}
 					case "raster":
 						for (g in renderer.renderGlyphs) {
@@ -280,8 +279,6 @@ class Main {
 					info = false;
 					timings = false;
 					printMissing = false;
-				case "-fixwinding":
-					globalFixWinding = true;
 				case "-allownonprint":
 					globalNonprint = true;
 				case "-help":

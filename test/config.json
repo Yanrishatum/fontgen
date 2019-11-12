@@ -5,7 +5,7 @@
 		"charset": [
 			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
 		],
-		"options": ["fixwinding"],
+		"options": [],
 		"fontSize": 24,
 		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
 		"spacing": { "x": 2, "y": 2 },
@@ -18,7 +18,7 @@
 		"charset": [
 			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
 		],
-		"options": ["fixwinding"],
+		"options": [],
 		"fontSize": 24,
 		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
 		"spacing": { "x": 2, "y": 2 },
@@ -32,7 +32,7 @@
 		"charset": [
 			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
 		],
-		"options": ["fixwinding"],
+		"options": [],
 		"fontSize": 24,
 		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
 		"spacing": { "x": 2, "y": 2 },
@@ -46,7 +46,7 @@
 		"charset": [
 			"latin", "конкретные глифы", [ "glyphs_plaintext.txt", "glyphs_xml.xml" ]
 		],
-		"options": ["fixwinding"],
+		"options": [],
 		"fontSize": 24,
 		"padding": { "top": 0, "bottom": 0, "left": 0, "right": 0 },
 		"spacing": { "x": 2, "y": 2 },
