@@ -4,6 +4,7 @@ import haxe.Json;
 import haxe.io.Path;
 import binpacking.MaxRectsPacker;
 import GlyphRender;
+import DataTypes;
 import msdfgen.Msdfgen;
 
 class Main {
@@ -32,7 +33,7 @@ class Main {
 		
 		for (config in configs) {
 			
-			var rasterMode = config.mode == "raster";
+			var rasterMode = config.mode == Raster;
 			var dfSize = rasterMode ? 0 : config.dfSize;
 			var halfDF = (dfSize * .5);
 			var fontSize = config.fontSize;
@@ -133,22 +134,22 @@ class Main {
 				inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
 				
 				switch (config.mode) {
-					case "msdf":
+					case MSDF:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
 								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
 						}
-					case "sdf":
+					case SDF:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
 								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
 						}
-					case "psdf":
+					case PSDF:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
 								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
 						}
-					case "raster":
+					case Raster:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
 								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g) + paddingLeft, canvasY(g) + paddingTop);
@@ -322,13 +323,10 @@ class Main {
 	}
 	
 	static function fillDefaults(cfg:GenConfig):GenConfig {
-		if ( cfg.mode == null ) cfg.mode = "msdf";
+		if ( cfg.mode == null ) cfg.mode = MSDF;
 		else {
-			cfg.mode = cfg.mode.toLowerCase();
-			switch ( cfg.mode ) {
-				case "msdf", "sdf", "psdf", "raster":
-				default: throw "Invalid render mode, allowed values are 'msdf', 'sdf', 'psdf' or 'raster'";
-			}
+			cfg.mode = (cfg.mode:String).toLowerCase();
+			cfg.mode.validate();
 		}
 		if ( cfg.fontSize == null ) throw "Font size should be specified!";
 		if ( cfg.inputs == null ) {
@@ -348,7 +346,7 @@ class Main {
 		}
 		if ( cfg.output == null ) throw "Output to FNT file should be specified!";
 		if ( cfg.charset == null ) cfg.charset = ["ansi"];
-		if ( cfg.dfSize == null ) cfg.dfSize = cfg.mode == "raster" ? 0 : 6;
+		if ( cfg.dfSize == null ) cfg.dfSize = cfg.mode == Raster ? 0 : 6;
 		if ( cfg.padding == null ) cfg.padding = { top: 0, bottom: 0, left: 0, right: 0 };
 		else {
 			if ( cfg.padding.top == null ) cfg.padding.top = 0;
@@ -370,17 +368,3 @@ class Main {
 	}
 	
 }
-
-typedef GenConfig = {
-	var input:String; // path to ttf
-	var inputs:Array<String>;
-	var output:String; // path to output .fnt
-	var charset:Array<Dynamic>; // Charset info
-	var fontSize:Null<Int>;
-	var options:Array<String>;
-	var padding: { top: Null<Int>, bottom: Null<Int>, left: Null<Int>, right: Null<Int> };
-	var spacing: { x:Null<Int>, y:Null<Int> };
-	// TODO: Margin
-	var dfSize:Null<Int>;
-	var mode:String; // Generator mode
-};

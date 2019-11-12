@@ -1,0 +1,8 @@
+common.hxml
+-D ammer.hl.build=native/hl
+-D ammer.hl.output=bin/
+-lib heaps
+-lib hlsdl
+-cp test
+-D resourcesPath=test/output
+-hl test/test.hl

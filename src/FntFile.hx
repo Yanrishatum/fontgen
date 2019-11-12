@@ -1,3 +1,5 @@
+import DataTypes;
+
 class FntFile {
 	
 	// Info
@@ -13,7 +15,7 @@ class FntFile {
 	public var spacingY:Int = 0;
 	public var outline:Int;
 	public var dfSize:Int;
-	public var dfMode:String;
+	public var dfMode:SdfMode;
 	
 	// Common
 	public var lineHeight:Int;
@@ -46,7 +48,9 @@ class FntFile {
 		for (kern in kernings) {
 			lines.push('kerning first=${kern.first} second=${kern.second} amount=${kern.amount}');
 		}
-		lines.push('sdf mode=$dfMode size=$dfSize');
+		if (dfMode != Raster) {
+			lines.push('sdf mode=$dfMode size=$dfSize');
+		}
 		return lines.join("\r\n");
 	}
 	
