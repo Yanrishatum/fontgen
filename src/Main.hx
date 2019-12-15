@@ -271,9 +271,15 @@ class Main {
 					printHelp();
 			}
 		}
+		var baseDir = Sys.getCwd();
 		for (arg in args) {
 			if (FileSystem.exists(arg)) {
-				Sys.setCwd(Path.directory(arg));
+				if (Path.isAbsolute(arg)) Sys.setCwd(Path.directory(arg));
+				else {
+					var dir = Path.directory(arg);
+					if (dir == "") Sys.setCwd(baseDir);
+					else Sys.setCwd(Path.join([baseDir, dir]));
+				}
 				return jsonConfig(File.getContent(arg));
 			}
 			// TODO: CLI
