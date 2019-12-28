@@ -1,4 +1,4 @@
-Fontgen v1.2.0 - command-line TTF/OTF rasterizer with SDF support
+Fontgen v1.3.0 - command-line TTF/OTF rasterizer with SDF support
 =================================================================
 Usage:
 {{exe}} <path-to-config.json> [flags]

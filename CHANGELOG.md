@@ -1,8 +1,8 @@
-* 1.2.0
+# 1.3.0
 * Added `r8raster` to use greyscale non-alpha image for rasterized glyphs.
 * Fixed crash on same-directory config paths
 
-# 1.1.1
+# 1.2.0
 * Added better solution for counter-clockwise glyphs.
 * Removed `fixwinding` options (always-on from now on)
 * Removed sdf chunk from .fnt file when in raster mode.
