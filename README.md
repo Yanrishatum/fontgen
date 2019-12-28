@@ -5,7 +5,9 @@ Font rasterizer for Heaps based on Msdfgen. Primary target is automation of font
 ## Usage
 So far tool is built only with Hashlink VM and Windows, but with appropriate config should also work on Mac/Linux, as well as HXCPP/Eval/HLC.  
 Command-line interface is currently limited to input config file and logger switches.  
-Note that on Windows, HL should see the `msdfgen.dll` and `ammer_msdfgen.hdll`, so it should be either current working directory or in PATH.
+Note that on Windows, HL should see the `msdfgen.dll` and `ammer_msdfgen.hdll`, so it should be either current working directory or in PATH.  
+Warning: Some image viewers do not follow PNG specification properly and show some rasterized images as pure white.
+This is an issue with particular decoder and file itself is correct. Known affected viewers: XNView, FastStone Image Viewer.
 
 ### General usage and config file structure.
 Run tool with: `hl fontgen.hl <input file> [switches]`  
@@ -59,6 +61,7 @@ See [`test/config.json`](test/config.json) for example config.
 All processor options can be used as switches to enable them on all configurations. For example `-allownonprint`
 
 * `allownonprint` - Enables rasterization of non-printing characters from range U+00 to U+1F plus U+7F (DEL). Disabled by default as to not produce warning about missing glyphs.
+* `r8raster` - Forces greyscale rasterization without usage of alpha when using `raster` mode.
 
 ### .fnt file additions
 Tool adds extra line at the end of `.fnt` file describing used SDF method that would allow decoder to determine parameters that are required to render the font.  

@@ -20,6 +20,7 @@ class Main {
 	public static var printMissing:Bool = false;
 	
 	public static var globalNonprint:Bool = false;
+	public static var globalr8:Bool = false;
 	
 	static function main() {
 		
@@ -56,6 +57,7 @@ class Main {
 			var ttfParse = ts();
 			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
 			
+			var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
 			// Find all corresponding glyphs to render.
 			var missing:Array<Int> = [];
 			var glyphs:Array<GlyphInfo> = [];
@@ -107,7 +109,7 @@ class Main {
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
 			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
 			
-			Msdfgen.beginAtlas(atlasWidth, atlasHeight, rasterMode ? 0 : 0xff);
+			Msdfgen.beginAtlas(atlasWidth, atlasHeight, (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000, rasterR8);
 			var paddingLeft = config.padding.left;
 			var paddingTop = config.padding.top;
 			var paddingBottom = config.padding.bottom;
@@ -267,6 +269,8 @@ class Main {
 					printMissing = false;
 				case "-allownonprint":
 					globalNonprint = true;
+				case "-r8raster":
+					globalr8 = true;
 				case "-help":
 					printHelp();
 			}

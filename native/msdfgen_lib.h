@@ -20,7 +20,7 @@ LIB_EXPORT bool getGlyphMetrics(int font, int charcode, unsigned char* output);
 LIB_EXPORT int getKerning(int font, int left, int right);
 LIB_EXPORT unsigned char* getFontName(int font, size_t* size);
 
-LIB_EXPORT void beginAtlas(int atlasWidth, int atlasHeight, int defaultAlpha);
+LIB_EXPORT void beginAtlas(int atlasWidth, int atlasHeight, int defaultColor, bool _enforceR8);
 LIB_EXPORT void endAtlas(char* output);
 
 LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw);

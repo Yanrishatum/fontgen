@@ -19,7 +19,7 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	public static function getKerning(font:Int, left:Int, right:Int):Int;
 	public static function getFontName(font:Int, len:SizeOfReturn):Bytes;
 
-	public static function beginAtlas(width:Int, height:Int, defaultAlpha:Int):Void;
+	public static function beginAtlas(width:Int, height:Int, defaultColor:Int, enforceR8:Bool):Void;
 	public static function endAtlas(output:String):Void;
 	
 	public static function generateSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool):Bool;

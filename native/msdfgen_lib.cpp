@@ -51,6 +51,7 @@ FT_Library ft_lib;
 std::vector<FontSlot*> fonts;
 
 int fontSize = 24;
+bool enforceR8 = false;
 double range = 4.0;
 Bitmap<byte, 4> atlasPixels;
 
@@ -160,15 +161,16 @@ LIB_EXPORT int getKerning(int font, int left, int right) {
 	return (vec.x+32) >> 6;
 }
 
-LIB_EXPORT void beginAtlas(int atlasWidth, int atlasHeight, int defaultAlpha) {
+LIB_EXPORT void beginAtlas(int atlasWidth, int atlasHeight, int defaultColor, bool _enforceR8) {
 	atlasPixels = Bitmap<byte, 4>(atlasWidth, atlasHeight);
-	const int max = atlasWidth * atlasHeight * 4;
-	unsigned char* pixels = (unsigned char*)atlasPixels;
-	memset(pixels, 0, max); // Because for some reason there's garbage in allocated memory?
-	if (defaultAlpha != 0) {
-		char alpha = (char)defaultAlpha;
-		for (int i = 3; i < max; i += 4) {
-			pixels[i] = alpha;
+	enforceR8 = _enforceR8;
+	const int max = atlasWidth * atlasHeight;
+	unsigned int* pixels = (unsigned int*)(unsigned char*)atlasPixels;
+	// Ensure empty memory
+	memset(pixels, 0, max);
+	if (defaultColor != 0) {
+		for (int i = 0; i < max; i++) {
+			pixels[i] = defaultColor;
 		}
 	}
 }
@@ -307,14 +309,27 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 			multiplier = 0xff;
 			// fall trough
 		case FT_PIXEL_MODE_GRAY:
-			for (int y = 0; y < height; y++) {
-				byte* it = atlasPixels(ox, oy + y);
-				for (int x = 0; x < width; x++) {
-					unsigned char px = bitmap->buffer[(y) * bitmap->width + x] * multiplier;
-					*it++ = 0xff;
-					*it++ = 0xff;
-					*it++ = 0xff;
-					*it++ = px;
+			if (enforceR8) {
+				for (int y = 0; y < height; y++) {
+					byte* it = atlasPixels(ox, oy + y);
+					for (int x = 0; x < width; x++) {
+						unsigned char px = bitmap->buffer[(y) * bitmap->width + x] * multiplier;
+						*it++ = px;
+						*it++ = px;
+						*it++ = px;
+						*it++ = 0xff;
+					}
+				}
+			} else {
+				for (int y = 0; y < height; y++) {
+					byte* it = atlasPixels(ox, oy + y);
+					for (int x = 0; x < width; x++) {
+						unsigned char px = bitmap->buffer[(y) * bitmap->width + x] * multiplier;
+						*it++ = 0xff;
+						*it++ = 0xff;
+						*it++ = 0xff;
+						*it++ = px;
+					}
 				}
 			}
 			
