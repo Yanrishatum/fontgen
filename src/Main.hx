@@ -63,6 +63,8 @@ class Main {
 			var glyphs:Array<GlyphInfo> = [];
 			var inserted:Array<Int> = [];
 			var skipNonprint:Bool = config.options.indexOf("allownonprint") == -1 && !globalNonprint;
+			var charsets = Charset.parse(config.charset);
+			var countMissing = charsets.indexOf(Charset.EVERYTHING) == -1;
 			for ( cset in Charset.parse(config.charset) ) {
 				for (char in cset) {
 					if (skipNonprint && Charset.NONPRINTING.contains(char)) continue;
@@ -77,7 +79,7 @@ class Main {
 						inserted.push(char);
 						break;
 					}
-					if (!found) missing.push(char);
+					if (countMissing && !found) missing.push(char);
 				}
 			}
 			
@@ -340,7 +342,7 @@ class Main {
 			}
 		}
 		if ( cfg.output == null ) throw "Output to FNT file should be specified!";
-		if ( cfg.charset == null ) cfg.charset = ["ansi"];
+		if ( cfg.charset == null || cfg.charset.length == 0 ) cfg.charset = ["everything"];
 		if ( cfg.dfSize == null ) cfg.dfSize = cfg.mode == Raster ? 0 : 6;
 		if ( cfg.padding == null ) cfg.padding = { top: 0, bottom: 0, left: 0, right: 0 };
 		else {

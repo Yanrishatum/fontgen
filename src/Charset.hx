@@ -317,10 +317,13 @@ class Charset {
 	// but they aren't printed, and usually not even present in the font file
 	// Another reason to separate is so `LATIN` charset won't complain about 32 missing characters.
 	public static var NONPRINTING:Charset = exactRange(0x0, 0x1f).appendChar(0x7F); // 0x7F = DEL
+	// Covers all currently supported unicode blocks
+	public static var EVERYTHING:Charset = new Charset(0x000000, 0x1fffff);
 	
 	public static var _ALIAS:Map<String, Array<Charset>> = [
-		"LATIN" => [BASIC_LATIN],
-		"ANSI" => [BASIC_LATIN],
+		"LATIN" => [BASIC_LATIN, LATIN1_SUPPLEMENT],
+		"ANSI" => [BASIC_LATIN, LATIN1_SUPPLEMENT],
+		"ASCII" => [NONPRINTING, BASIC_LATIN],
 		"LATIN_EXTENDED" => [
 			LATIN_EXTENDED_A,
 			LATIN_EXTENDED_B,
