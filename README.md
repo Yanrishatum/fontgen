@@ -23,7 +23,18 @@ Input file should contain a JSON object or array of objects describing font rast
   "options": Array<ProcessorOption>,
 	"fontSize": Int,
 	"padding": { "top": Int, "bottom": Int, "left": Int, "right": Int },
-	"spacing": { "x": Int, "y": Int },
+  "spacing": { "x": Int, "y": Int },
+  "packer": {
+    "size": Int,
+    "width": Int,
+    "height": Int,
+    "pot": Bool,
+    "exact": Bool,
+    "sort": String,
+    "algorithm": String,
+    "heuristic": String,
+    "useWasteMap": String
+  }
 }
 ```
 * `input` - path to TTF file relative to JSON file. Optional if `inputs` is present.
@@ -44,6 +55,43 @@ MSDF provides best accuracy by utilizing RGB channels, all others produce graysc
 * `padding` - optional and defaults to `0`. Describes extra padding for glyphs on the texture in pixels.
 * `spacing` - optional and defaults to `1`. Describes spacing between glyphs on the texture in pixels.
 * `options` - optional list of extra configuration flags. See below.
+
+#### Packer configuration
+Optional packer configuration allows to fine-tune atlas creation.
+* `size` - Shortcut to set both `width` and `height` with same value. Default max atlas size is 4096x4096
+* `width` - Maximum output atlas width in pixels. Note that it does not ensure atlas would be of specified size.
+* `height` - Maximum output atlas height in pixels.
+* `pot` - Output image will be power-of-two in dimensions. Note that this operation can override maximum size
+(for example 122 max size can output 128px image), and packing of content happens within boundaries of define sizes, not power-of-two boundaries. Default: false
+* `exact` - Ensures that output image is always of specified size. Default: false
+* `sort` - Sets sorting function for glyphs prior packing. Prefixing name with `-` would reverse sort results.  
+Available values: `width`, `height`, `area`, `perimeter` and `char`. Defaults to `-height`.  
+* `algorithm` - Allows to select packing algorithm. Available values presented below. Defaults to `max-rect`
+  * `guillotine` - Uses Guillotine algorithm. Currently not configurable and uses `BestLongSideFit` and `MaximizeArea` heuristics.
+  * `naive-shelf` - Uses naive Shelf algorithm.
+  * `shelf` - Uses Shelf algorithm. Default Heuristic is `BestArea`. Allows usage of waste map.
+  * `simple-max-rect` - Uses simplified Max Rects algorithm.
+  * `skyline` - Uses Skyline algorithm. Default Heuristic is `MinWasteFit`.
+  * `max-rect` - Uses Max Rects algorithm. Default Heuristic is `BestLongSideFit`.
+* `heuristic` - Specifies exact heuristic to use for some algorithms. **Case-sensitive.**
+  * `shelf` - Dictates which shelf to choose:
+    * `Next` - Always add the new rectangle to the last open shelf
+    * `First` - Test each rectangle against each shelf in turn and pack it to the first where it fits
+    * `BestArea` - Choose the shelf with smallest remaining shelf area
+    * `WorstArea` - Choose the shelf with the largest remaining shelf area
+    * `BestHeight` - Choose the smallest shelf (height-wise) where the rectangle fits
+    * `BestWidth` - Choose the shelf that has the least remaining horizontal shelf space available after packing
+    * `WorstWidth` - Choose the shelf that will have most remainining horizontal shelf space available after packing
+  * `skyline` - Dictates prefered insertion location:
+    * `BottomLeft`
+    * `MinWasteFit`
+  * `max-rect` - Dictates which rects is preferred when inserting:
+    * `BestShortSideFit`
+    * `BestLongSideFit`
+    * `BestAreaFit`
+    * `BottomLeftRule`
+    * `ContactPointRule`
+* `useWasteMap` - Enables or disables usage of waste maps for some algorithms.
 
 See [`test/config.json`](test/config.json) for example config.
 

@@ -52,6 +52,7 @@ std::vector<FontSlot*> fonts;
 
 int fontSize = 24;
 bool enforceR8 = false;
+bool normalizeShapes = false;
 double range = 4.0;
 Bitmap<byte, 4> atlasPixels;
 
@@ -167,7 +168,7 @@ LIB_EXPORT void beginAtlas(int atlasWidth, int atlasHeight, int defaultColor, bo
 	const int max = atlasWidth * atlasHeight;
 	unsigned int* pixels = (unsigned int*)(unsigned char*)atlasPixels;
 	// Ensure empty memory
-	memset(pixels, 0, max);
+	memset(pixels, 0, max*sizeof(int));
 	if (defaultColor != 0) {
 		for (int i = 0; i < max; i++) {
 			pixels[i] = defaultColor;
@@ -181,12 +182,24 @@ LIB_EXPORT void endAtlas(char* output) {
 	// TODO: Optimization: Save in appropriate format - grayscale (SDF/PSDF), RGB (MSDF) and RGBA for raster.
 }
 
+void normalizeShape(Shape &shape) {
+	if (normalizeShapes) {
+		shape.normalize();
+	} else {
+		for (std::vector<msdfgen::Contour>::iterator contour = shape.contours.begin(); contour != shape.contours.end(); ++contour) {
+			if (contour->edges.size() == 1) {
+				contour->edges.clear();
+			}
+		}
+	}
+}
+
 LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
 	if (width == 0 || height == 0) return true;
 	
 	Shape glyph;
 	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		glyph.normalize();
+		normalizeShape(glyph);
 		Bitmap<float, 1> sdf(width, height);
 		double scale = fonts[slot]->scale;
 		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
@@ -206,7 +219,7 @@ LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, 
 			for (int y = height - 1; y >= 0; y--) {
 				byte* it = atlasPixels(ox, oy - y);
 				for (int x = 0; x < width; x++) {
-					float px = pixelFloatToByte(*sdf(x, y));
+					byte px = pixelFloatToByte(*sdf(x, y));
 					*it++ = px;
 					*it++ = px;
 					*it++ = px;
@@ -224,7 +237,7 @@ LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height,
 	
 	Shape glyph;
 	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		glyph.normalize();
+		normalizeShape(glyph);
 		Bitmap<float, 1> sdf(width, height);
 		double scale = fonts[slot]->scale;
 		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
@@ -261,7 +274,7 @@ LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height,
 	if (width == 0 || height == 0) return true;
 	Shape glyph;
 	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		glyph.normalize();
+		normalizeShape(glyph);
 		edgeColoringSimple(glyph, 3, 0);
 		Bitmap<float, 3> msdf(width, height);
 		double scale = fonts[slot]->scale;

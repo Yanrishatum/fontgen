@@ -24,4 +24,17 @@ typedef GenConfig = {
 	// TODO: Margin
 	var dfSize:Null<Int>;
 	var mode:SdfMode; // Generator mode
+	var packer:PackerConfig;
 };
+
+typedef PackerConfig = {
+	var size:Null<Int>;
+	var width:Null<Int>;
+	var height:Null<Int>;
+	var pot:Bool;
+	var exact:Bool;
+	var sort:String;
+	var algorithm:String;
+	var heuristic:String;
+	var useWasteMap:Null<Bool>;
+}

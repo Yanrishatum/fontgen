@@ -1,3 +1,8 @@
+import binpacking.SkylinePacker;
+import binpacking.SimplifiedMaxRectsPacker;
+import binpacking.ShelfPacker;
+import binpacking.NaiveShelfPacker;
+import binpacking.GuillotinePacker;
 import sys.io.File;
 import sys.FileSystem;
 import haxe.Json;
@@ -102,7 +107,7 @@ class Main {
 			var extendWidth = config.padding.left + config.padding.right + dfSize + config.spacing.x;
 			var extendHeight = config.padding.top + config.padding.bottom + dfSize + config.spacing.y;
 			
-			packGlyphs(glyphs, fontSize, extendWidth, extendHeight);
+			packGlyphs(config.packer, glyphs, fontSize, extendWidth, extendHeight);
 			
 			extendWidth -= config.spacing.x;
 			extendHeight -= config.spacing.y;
@@ -156,7 +161,7 @@ class Main {
 					case Raster:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g) + paddingLeft, canvasY(g) + paddingTop);
+								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, g.width, g.height, canvasX(g) + paddingLeft, canvasY(g) + paddingTop);
 						}
 				}
 			}
@@ -223,22 +228,79 @@ class Main {
 		}
 	}
 	
-	static function packGlyphs(glyphs:Array<GlyphInfo>, fontSize:Int, extendWidth:Int, extendHeight:Int) {
+	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, fontSize:Int, extendWidth:Int, extendHeight:Int) {
+		var inverse = config.sort.charCodeAt(0) == '-'.code;
+		var sortAlgo = switch (inverse ? config.sort.substr(1) : config.sort) {
+			case "width": widthSort;
+			case "area": areaSort;
+			case "perimeter": perimeterSort;
+			case "id", "char": idSort;
+			default: heightSort;
+		}
+		glyphs.sort(sortAlgo);
+		if (inverse) glyphs.reverse();
 		
-		glyphs.sort(glyphSort);
+		var insert:(w:Int, h:Int)->binpacking.Rect;
+		switch (config.algorithm) {
+			case "guillotine":
+				var p = new GuillotinePacker(config.width, config.height);
+				insert = p.insert.bind(_, _, false, BestLongSideFit, MaximizeArea);
+			case "naive-shelf":
+				var p = new NaiveShelfPacker(config.width, config.height);
+				insert = p.insert;
+			case "shelf":
+				var p = new ShelfPacker(config.width, config.height, config.useWasteMap == null ? true : config.useWasteMap);
+				var names = ShelfChoiceHeuristic.getConstructors();
+				var heur = if (names.indexOf(config.heuristic) != -1) ShelfChoiceHeuristic.createByName(config.heuristic);
+					else ShelfChoiceHeuristic.BestArea;
+				insert = p.insert.bind(_, _, heur);
+			case "simple-max-rect":
+				var p = new SimplifiedMaxRectsPacker(config.width, config.height);
+				insert = p.insert;
+			case "skyline": 
+				var p = new SkylinePacker(config.width, config.height, true); // Does not expect usage without waste map.
+				var names = LevelChoiceHeuristic.getConstructors();
+				var heur = if (names.indexOf(config.heuristic) != -1) LevelChoiceHeuristic.createByName(config.heuristic);
+					else LevelChoiceHeuristic.MinWasteFit;
+				insert = p.insert.bind(_, _, heur);
+			default:
+				var p = new MaxRectsPacker(config.width, config.height, false);
+				var names = FreeRectChoiceHeuristic.getConstructors();
+				var heur = if (names.indexOf(config.heuristic) != -1) FreeRectChoiceHeuristic.createByName(config.heuristic);
+					else FreeRectChoiceHeuristic.BestLongSideFit;
+				insert = p.insert.bind(_, _, heur);
+		}
 		
-		var packer = new MaxRectsPacker(SIZE, SIZE, false);
 		var xMax = 0;
 		var yMax = 0;
 		for (g in glyphs) {
-			var rect = g.rect = packer.insert(g.width + extendWidth, g.height + extendHeight, BestShortSideFit);
+			var rect = g.rect = insert(g.width + extendWidth, g.height + extendHeight);
 			var tmp = Std.int(rect.x + rect.width);
 			if (tmp > xMax) xMax = tmp;
 			tmp = Std.int(rect.y + rect.height);
 			if (tmp > yMax) yMax = tmp;
 		}
-		atlasWidth = xMax;
-		atlasHeight = yMax;
+		if (config.exact) {
+			atlasWidth = config.width;
+			atlasHeight = config.height;
+		} else if (config.pot) {
+			atlasWidth = toPOT(xMax);
+			atlasHeight = toPOT(yMax);
+		} else {
+			atlasWidth = xMax;
+			atlasHeight = yMax;
+		}
+	}
+	
+	static function toPOT(v:Int):Int {
+		// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+		v--;
+		v |= v >> 1;
+		v |= v >> 2;
+		v |= v >> 4;
+		v |= v >> 8;
+		v |= v >> 16;
+		return v + 1;
 	}
 	
 	static function readInput():Array<GenConfig> {
@@ -343,7 +405,7 @@ class Main {
 		}
 		if ( cfg.output == null ) throw "Output to FNT file should be specified!";
 		if ( cfg.charset == null || cfg.charset.length == 0 ) cfg.charset = ["everything"];
-		if ( cfg.dfSize == null ) cfg.dfSize = cfg.mode == Raster ? 0 : 6;
+		if ( cfg.dfSize == null ) cfg.dfSize = 6;
 		if ( cfg.padding == null ) cfg.padding = { top: 0, bottom: 0, left: 0, right: 0 };
 		else {
 			if ( cfg.padding.top == null ) cfg.padding.top = 0;
@@ -356,12 +418,58 @@ class Main {
 			if ( cfg.spacing.x == null) cfg.spacing.x = 0;
 			if ( cfg.spacing.y == null) cfg.spacing.y = 0;
 		}
+		
+		if (cfg.packer == null) {
+			cfg.packer = {
+				size: null,
+				width: 4096,
+				height: 4096,
+				pot: false,
+				exact: false,
+				sort: "-height",
+				algorithm: "max-rect",
+				heuristic: null,
+				useWasteMap: true,
+			};
+		} else {
+			if (cfg.packer.size != null) {
+				cfg.packer.width = cfg.packer.height = cfg.packer.size;
+			} else {
+				if (cfg.packer.width == null) cfg.packer.width = 4096;
+				if (cfg.packer.height == null) cfg.packer.height = 4096;
+				if (cfg.packer.sort == null) cfg.packer.sort = "-height";
+				else cfg.packer.sort = cfg.packer.sort.toLowerCase();
+				if (cfg.packer.algorithm == null) cfg.packer.algorithm = "max-rect";
+				else cfg.packer.algorithm = cfg.packer.algorithm.toLowerCase();
+			}
+		}
+		
 		return cfg;
 	}
 	
-	static function glyphSort(a:GlyphInfo, b:GlyphInfo):Int
+	static function widthSort(a:GlyphInfo, b:GlyphInfo):Int
+	{
+		return Math.round(a.width - b.width);
+	}
+	
+	static function heightSort(a:GlyphInfo, b:GlyphInfo):Int
 	{
 		return Math.round(a.height - b.height);
+	}
+	
+	static function areaSort(a:GlyphInfo, b:GlyphInfo):Int
+	{
+		return Math.round((a.width * a.height) - (b.width * b.height));
+	}
+	
+	static function perimeterSort(a:GlyphInfo, b:GlyphInfo):Int
+	{
+		return Math.round((a.width + a.height) - (b.width + b.height));
+	}
+	
+	static function idSort(a:GlyphInfo, b:GlyphInfo):Int
+	{
+		return a.char - b.char;
 	}
 	
 }

@@ -1,4 +1,4 @@
-Fontgen v1.3.0 - command-line TTF/OTF rasterizer with SDF support
+Fontgen v1.5.0 - command-line TTF/OTF rasterizer with SDF support
 =================================================================
 Usage:
 {{exe}} <path-to-config.json> [flags]
@@ -32,7 +32,18 @@ Config json sample:
   ],
   "fontSize": 24,
   "padding": { "top": 1, "bottom": 1, "left": 1, "right": 1 },
-  "spacing": { "x": 2, "y": 2 }
+  "spacing": { "x": 2, "y": 2 },
+  "packer": {
+    "size": 4096,
+    "width": 4096,
+    "height": 4096,
+    "pot": false,
+    "exact": false,
+    "sort": "height",
+    "algotithm": "max-rect",
+    "heuristic": "BestShortSizeFit",
+    "useWasteMap": true
+  }
 }
 File can be either one config of an array of multiple configs.
 
