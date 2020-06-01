@@ -308,6 +308,7 @@ class Main {
 		if (args.length == 0) printHelp();
 		var flags = args.filter( (a) -> a.charCodeAt(0) == '-'.code );
 		args = args.filter( (a) -> a.charCodeAt(0) != '-'.code );
+		var stdinConfig:Bool = false;
 		
 		for (arg in flags) {
 			switch (arg.toLowerCase()) {
@@ -337,7 +338,13 @@ class Main {
 					globalr8 = true;
 				case "-help":
 					printHelp();
+				case "-stdin":
+					stdinConfig = true;
 			}
+		}
+		if (stdinConfig) {
+			var data = Sys.stdin().readAll().toString();
+			return jsonConfig(data);
 		}
 		var baseDir = Sys.getCwd();
 		for (arg in args) {

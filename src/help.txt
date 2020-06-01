@@ -11,6 +11,9 @@ Available flags:
   -nowarnings   : Suppress warnings
   -verbose      : Enables all logging flags.
   -silent       : Disables all logging flags.
+  -stdin        : Read config json from stdin instead of file path.
+                  Note that in that case current working directory
+                  is considered as a reference for file lookup.
 
 Config options:
   allownonprint : Enables rasterization of characters from

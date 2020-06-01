@@ -104,6 +104,7 @@ See [`test/config.json`](test/config.json) for example config.
 * `-silent` - suppresses all logging.
 * `-verbose` - enables all logging.
 * `-help` - Prints [help](src/help.txt) file and exits.
+* `-stdin` - Allows to pass json config via stdin. Note that current working directory will be considered as a root path for font lookup.
 
 ### Processor pptions
 All processor options can be used as switches to enable them on all configurations. For example `-allownonprint`
