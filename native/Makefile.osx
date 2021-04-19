@@ -1,12 +1,19 @@
-all: libmsdfgen.dylib msdfgen.o
+# Installation on OSX/MacOS:
+# 1) Run `cmake . && make` inside msdfgen directory (make sure repo was cloned with `--recursive` flag)
+# 2) Rename this `Makefile.osx` to `Makefile`
+# 3) Run `make` in this directory
+# 4) Run `haxe build.hxml` in repo root dir (for HL build)
+# 5) Copy both `bin/ammer_msdfgen_lib.hdll` and `native/libmsdfgen_lib.dylib` to `usr/local/lib`
 
-libmsdfgen.dylib: msdfgen.c
-	gcc -dynamiclib -o libmsdfgen.dylib msdfgen.c
+all: libmsdfgen_lib.dylib msdfgen_lib.o
 
-msdfgen.so: msdfgen.o
-	gcc -shared -fPIC -o msdfgen.so msdfgen.o -lc
+libmsdfgen_lib.dylib: msdfgen_lib.o
+	g++ -dynamiclib -fPIC -Lmsdfgen -lfreetype -lmsdfgen -o libmsdfgen_lib.dylib msdfgen_lib.o lodepng.o tinyxml2.o 
 
-msdfgen.o: msdfgen.c
-	gcc -c -fPIC -o msdfgen.o msdfgen.c
+msdfgen_lib.o: msdfgen_lib.cpp
+	g++ -c -Imsdfgen/freetype/include -Imsdfgen/include -g msdfgen_lib.cpp msdfgen/lib/lodepng.cpp msdfgen/lib/tinyxml2.cpp 
+
+clean:
+	rm libmsdfgen_lib.dylib msdfgen_lib.o lodepng.o tinyxml2.o
 
 .PHONY: all
