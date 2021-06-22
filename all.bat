@@ -1,19 +1,18 @@
-@ECHO off
-REM resetvars
-REM vcvarsall
-REM pushd native\msdfgen
-REM cmake -DCMAKE_BUILD_TYPE=Release .
-REM nmake clean
-REM nmake
-REM popd
+ resetvars
+call vcvars
+ pushd native\msdfgen
+ cmake -G "NMake Makefiles"  -DCMAKE_TOOLCHAIN_FILE=%vcpkg_path%/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release . -A Win32 
+ nmake clean
+ nmake
+ popd
 pushd native
-REM del msdfgen.obj
-REM del msdfgen.exp
-REM del msdfgen.dll
+ del msdfgen.obj
+ del msdfgen.exp
+ del msdfgen.dll
 nmake Makefile.win
 popd
-cp native/msdfgen_lib.dll bin
-haxe build.hxml -D ammer.hl.hlInclude=E:/HaxeToolkit/hl/include -D ammer.hl.hlLibrary=E:/HaxeToolkit/hl
+copy native\msdfgen_lib.dll bin\msdfgen_lib.dll
+haxe build.hxml -D ammer.hl.hlInclude=%HLPATH%/include -D ammer.hl.hlLibrary=%HLPATH%
 pushd bin
 hl fontgen.hl ../test/config.json -verbose
 popd
