@@ -380,11 +380,27 @@ class Main {
 		if (Std.is(cfg, Array)) {
 			var arr:Array<GenConfig> = cfg;
 			for (conf in arr) {
+				fillTemplate(conf);
 				fillDefaults(conf);
 			}
 			return arr;
 		} else {
 			return [fillDefaults(cfg)];
+		}
+	}
+
+	static function fillTemplate(cfg:GenConfig) {
+		if (cfg.template == null)
+			return;
+		if (!FileSystem.exists(cfg.template)) {
+			Sys.println('[Warn] template ${cfg.template} not found');
+			return;
+		}
+		var template = Json.parse (File.getContent(cfg.template));
+		for (key in Reflect.fields(template)) {
+			if (!Reflect.hasField(cfg, key)) {
+				Reflect.setField(cfg, key, Reflect.field(template, key));
+			}
 		}
 	}
 	

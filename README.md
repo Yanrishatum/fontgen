@@ -34,7 +34,8 @@ Input file should contain a JSON object or array of objects describing font rast
     "algorithm": String,
     "heuristic": String,
     "useWasteMap": String
-  }
+  },
+  "template":String
 }
 ```
 * `input` - path to TTF file relative to JSON file. Optional if `inputs` is present.
@@ -55,6 +56,7 @@ MSDF provides best accuracy by utilizing RGB channels, all others produce graysc
 * `padding` - optional and defaults to `0`. Describes extra padding for glyphs on the texture in pixels.
 * `spacing` - optional and defaults to `1`. Describes spacing between glyphs on the texture in pixels.
 * `options` - optional list of extra configuration flags. See below.
+* `template` - optional file name of config containing "default" values which would be inherited if not defined in main config.
 
 #### Packer configuration
 Optional packer configuration allows to fine-tune atlas creation.

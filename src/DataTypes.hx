@@ -25,6 +25,7 @@ typedef GenConfig = {
 	var dfSize:Null<Int>;
 	var mode:SdfMode; // Generator mode
 	var packer:PackerConfig;
+	var template:String;
 };
 
 typedef PackerConfig = {
