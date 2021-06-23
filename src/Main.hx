@@ -120,15 +120,7 @@ class Main {
 			var paddingLeft = config.padding.left;
 			var paddingTop = config.padding.top;
 			var paddingBottom = config.padding.bottom;
-			var dfCorrX, dfCorrY;
-			if (rasterMode) {
-				dfCorrX = halfDF;
-				dfCorrY = halfDF;
-			} else {
-				dfCorrX = halfDF - 0.5;
-				dfCorrY = halfDF - 0.5;
-			}
-			
+
 			for (renderer in renderers) {
 				if (renderer.renderGlyphs.length == 0) continue;
 				if (info)
