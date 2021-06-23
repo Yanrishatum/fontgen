@@ -102,13 +102,8 @@ class Main {
 			if (info) Sys.println('[Info] Rendering ${inserted.length} glyphs');
 			if (timings) Sys.println("[Timing] Glyph lookup: " + timeStr(charsetProcess - ttfParse));
 			
-			var extendWidth = config.padding.left + config.padding.right + dfSize + config.spacing.x;
-			var extendHeight = config.padding.top + config.padding.bottom + dfSize + config.spacing.y;
 			
-			packGlyphs(config.packer, glyphs, extendWidth, extendHeight);
-			
-			extendWidth -= config.spacing.x;
-			extendHeight -= config.spacing.y;
+			packGlyphs(config.packer, glyphs, config.spacing.x, config.spacing.y);
 			
 			var glyphPacking = ts();
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
@@ -125,11 +120,11 @@ class Main {
 					Sys.println("[Info] Started rendering glyphs from " + renderer.file);
 				
 				
-				inline function glyphWidth(g:GlyphInfo) return g.width + extendWidth;
-				inline function glyphHeight(g:GlyphInfo) return g.height + extendHeight;
+				inline function glyphWidth(g:GlyphInfo) return g.width;
+				inline function glyphHeight(g:GlyphInfo) return g.height;
 				inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
 				inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-				inline function translateX(g:GlyphInfo) return Math.ceil(halfDF) - 0.5 - g.xOffset + paddingLeft;
+				inline function translateX(g:GlyphInfo) return  - (0.5 - g.xOffset) ;
 				inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
 				
 				switch (config.mode) {
@@ -151,7 +146,7 @@ class Main {
 					case Raster:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, g.width, g.height, canvasX(g) + paddingLeft, canvasY(g) + paddingTop);
+								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, g.width, g.height, canvasX(g) + paddingLeft, canvasY(g) + paddingTop); // todo is +padding required here, g.rect already contains it.
 						}
 				}
 			}
@@ -174,11 +169,11 @@ class Main {
 					id: g.char,
 					x: Std.int(g.rect.x),
 					y: Std.int(g.rect.y),
-					w: g.width + extendWidth,
-					h: g.height + extendHeight,
+					w: g.width ,
+					h: g.height ,
 					xa: g.advance,
-					xo: g.xOffset - paddingLeft - Math.ceil(halfDF),
-					yo: (file.base - g.yOffset) - paddingTop - Math.ceil(halfDF),
+					xo: g.xOffset,
+					yo: (file.base - g.yOffset),
 				});
 			}
 			
