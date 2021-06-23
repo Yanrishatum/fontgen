@@ -26,16 +26,26 @@ class Main {
 	
 	public static var globalNonprint:Bool = false;
 	public static var globalr8:Bool = false;
-	
+	public static var sharedAtlas:Bool = false;
+
+	inline static function ts() return haxe.Timer.stamp();
+	inline static function timeStr(ts:Float) return Std.string(Math.round(ts * 1000)) + "ms";
+
 	static function main() {
 		
 		var configs = readInput();
 		
-		inline function ts() return haxe.Timer.stamp();
-		inline function timeStr(ts:Float) return Std.string(Math.round(ts * 1000)) + "ms";
 		
 		var start = ts();
 		Msdfgen.initializeFreetype();
+
+		var globRenderers = [];
+		inline function getRenderers() {
+			return if (sharedAtlas)
+				globRenderers;
+			else
+				[];
+		}
 		
 		for (config in configs) {
 			
@@ -49,7 +59,7 @@ class Main {
 			}
 			
 			var stamp = ts();
-			var renderers:Array<GlyphRender> = [];
+			var renderers:Array<GlyphRender> = getRenderers();
 			for ( inp in config.inputs ) {
 				if (info) Sys.println("[Info] TTF: " + inp);
 				renderers.push(new GlyphRender(inp, config));
@@ -58,48 +68,10 @@ class Main {
 			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
 			
 			var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
-			// Find all corresponding glyphs to render.
-			var missing:Array<Int> = [];
-			var glyphs:Array<GlyphInfo> = [];
-			var inserted:Array<Int> = [];
-			var skipNonprint:Bool = config.options.indexOf("allownonprint") == -1 && !globalNonprint;
-			var charsets = Charset.parse(config.charset);
-			var countMissing = charsets.indexOf(Charset.EVERYTHING) == -1;
-			for ( cset in Charset.parse(config.charset) ) {
-				for (char in cset) {
-					if (skipNonprint && Charset.NONPRINTING.contains(char)) continue;
-					if (inserted.indexOf(char) != -1) continue; // Already rendering with another charset.
-					var found = false;
-					for (renderer in renderers) {
-						var glyph = renderer.get(char);
-						if (glyph == null) continue;
-						glyphs.push(glyph);
-						renderer.renderGlyphs.push(glyph);
-						found = true;
-						inserted.push(char);
-						break;
-					}
-					if (countMissing && !found) missing.push(char);
-				}
-			}
+
+			var glyphs:Array<GlyphInfo> = fillGlyphs(config, renderers, ttfParse);
 			
 			var charsetProcess = ts();
-			if ((warnings || printMissing) && missing.length != 0) {
-				Sys.println('[Warn] Could not locate ${missing.length} glyphs!');
-				if (printMissing) {
-					Sys.print(missing[0] + ": " + String.fromCharCode(missing[0]));
-					var i = 1, l = missing.length;
-					while (i < l) {
-						var char = missing[i++];
-						Sys.print(", " + char + ": " + String.fromCharCode(char));
-					}
-					Sys.print("\n");
-				}
-			}
-			if (info) Sys.println('[Info] Rendering ${inserted.length} glyphs');
-			if (timings) Sys.println("[Timing] Glyph lookup: " + timeStr(charsetProcess - ttfParse));
-			
-			
 			packGlyphs(config.packer, glyphs, config.spacing.x, config.spacing.y);
 			
 			var glyphPacking = ts();
@@ -141,7 +113,7 @@ class Main {
 				});
 			}
 			
-			final len = inserted.length;
+			final len = glyphs.length;
 			for (i in 0...len) {
 				var left = glyphs[i];
 				var slot = left.renderer.slot;
@@ -240,6 +212,50 @@ class Main {
 			atlasHeight = yMax;
 		}
 	}
+
+	static function fillGlyphs(config:GenConfig, renderers:Array<GlyphRender>, lastStamp:Float) {
+		// Find all corresponding glyphs to render.
+		var missing:Array<Int> = [];
+		var glyphs:Array<GlyphInfo> = [];
+		var inserted:Array<Int> = [];
+		var skipNonprint:Bool = config.options.indexOf("allownonprint") == -1 && !globalNonprint;
+		var charsets = Charset.parse(config.charset);
+		var countMissing = charsets.indexOf(Charset.EVERYTHING) == -1;
+		for ( cset in Charset.parse(config.charset) ) {
+			for (char in cset) {
+				if (skipNonprint && Charset.NONPRINTING.contains(char)) continue;
+				if (inserted.indexOf(char) != -1) continue; // Already rendering with another charset.
+				var found = false;
+				for (renderer in renderers) {
+					var glyph = renderer.get(char);
+					if (glyph == null) continue;
+					glyphs.push(glyph);
+					renderer.renderGlyphs.push(glyph);
+					found = true;
+					inserted.push(char);
+					break;
+				}
+				if (countMissing && !found) missing.push(char);
+			}
+		}
+
+		var charsetProcess = ts();
+		if ((warnings || printMissing) && missing.length != 0) {
+			Sys.println('[Warn] Could not locate ${missing.length} glyphs!');
+			if (printMissing) {
+				Sys.print(missing[0] + ": " + String.fromCharCode(missing[0]));
+				var i = 1, l = missing.length;
+				while (i < l) {
+					var char = missing[i++];
+					Sys.print(", " + char + ": " + String.fromCharCode(char));
+				}
+				Sys.print("\n");
+			}
+		}
+		if (info) Sys.println('[Info] Rendering ${inserted.length} glyphs');
+		if (timings) Sys.println("[Timing] Glyph lookup: " + timeStr(charsetProcess - lastStamp));
+		return glyphs;
+	}
 	
 	static function toPOT(v:Int):Int {
 		// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
@@ -285,6 +301,8 @@ class Main {
 					globalNonprint = true;
 				case "-r8raster":
 					globalr8 = true;
+				case "-sharedAtlas":
+					sharedAtlas = true;
 				case "-help":
 					printHelp();
 				case "-stdin":
