@@ -73,22 +73,14 @@ class Main {
 			
 			var charsetProcess = ts();
 			packGlyphs(config.packer, glyphs, config.spacing.x, config.spacing.y);
-			
+
 			var glyphPacking = ts();
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
 			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
-			
-			Msdfgen.beginAtlas(atlasWidth, atlasHeight, (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000, rasterR8);
 
-			for (renderer in renderers) {
-				if (renderer.renderGlyphs.length == 0) continue;
-				if (info)
-					Sys.println("[Info] Started rendering glyphs from " + renderer.file);
-				renderer.renderToAtlas();
-			}
-			
 			var pngPath = Path.withExtension(config.output, "png");
-			Msdfgen.endAtlas(pngPath);
+			renderAtlas(pngPath, renderers, config);
+
 			var glyphRendering = ts();
 			if (info) Sys.println("[Info] Writing PNG file to " + pngPath);
 			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
@@ -148,7 +140,24 @@ class Main {
 			Sys.println("[Timing] Total work time: " + timeStr(ts() - start));
 		}
 	}
-	
+
+	static function renderAtlas(pngPath, renderers:Array<GlyphRender>, config:GenConfig) {
+		var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
+		var rasterMode = config.mode == Raster;
+		var bgColor = (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000;
+		Msdfgen.beginAtlas(atlasWidth, atlasHeight, bgColor, rasterR8);
+
+		for (renderer in renderers) {
+			if (renderer.renderGlyphs.length == 0)
+				continue;
+			if (info)
+				Sys.println("[Info] Started rendering glyphs from " + renderer.file);
+			renderer.renderToAtlas();
+		}
+
+		Msdfgen.endAtlas(pngPath);
+	}
+
 	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, extendWidth:Int, extendHeight:Int) {
 		var inverse = config.sort.charCodeAt(0) == '-'.code;
 		var sortAlgo = switch (inverse ? config.sort.substr(1) : config.sort) {
