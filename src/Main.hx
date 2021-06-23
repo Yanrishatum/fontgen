@@ -67,8 +67,6 @@ class Main {
 			var ttfParse = ts();
 			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
 			
-			var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
-
 			var glyphs:Array<GlyphInfo> = fillGlyphs(config, renderers, ttfParse);
 			
 			var charsetProcess = ts();
