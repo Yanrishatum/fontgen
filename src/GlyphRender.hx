@@ -2,6 +2,7 @@ import haxe.io.Bytes;
 import msdfgen.StructAlias;
 import msdfgen.Msdfgen;
 import binpacking.Rect;
+import DataTypes.GenConfig;
 
 class GlyphRender {
 	
@@ -21,16 +22,16 @@ class GlyphRender {
 	public var fontHeight:Int;
 	public var ascent:Int;
 	public var descent:Int;
-	
+
 	var glyphMap:Map<Int, GlyphInfo>;
 	public var renderGlyphs:Array<GlyphInfo>;
 	
-	public function new(path:String)
+	public function new(path:String, config:GenConfig)
 	{
 		file = path;
 		
 		var m = METRICS;
-		slot = Msdfgen.initFont(path, m);
+		slot = Msdfgen.initFont(path, m, config.fontSize);
 		this.ascent = m.ascent;
 		this.descent = m.descent;
 		this.baseLine = m.baseLine;

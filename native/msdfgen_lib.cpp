@@ -50,10 +50,8 @@ FreetypeHandle* ft = NULL;
 FT_Library ft_lib;
 std::vector<FontSlot*> fonts;
 
-int fontSize = 24;
 bool enforceR8 = false;
 bool normalizeShapes = false;
-double range = 4.0;
 Bitmap<byte, 4> atlasPixels;
 
 LIB_EXPORT bool wrap_initializeFreetype() {
@@ -69,12 +67,8 @@ LIB_EXPORT void wrap_deinitializeFreetype() {
 	}
 }
 
-LIB_EXPORT void setParameters(double dfRange, int _fontSize) {
-	range = dfRange;
-	fontSize = _fontSize;
-}
 
-LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data) {
+LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data, int fontSize) {
 	FontHandle* msdfHandle = loadFont(ft, filename);
 	if (msdfHandle != NULL) {
 		int index = fonts.size();
@@ -194,7 +188,7 @@ void normalizeShape(Shape &shape) {
 	}
 }
 
-LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
+LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
 	if (width == 0 || height == 0) return true;
 	
 	Shape glyph;
@@ -232,7 +226,7 @@ LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, 
 	return false;
 }
 
-LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
+LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
 	if (width == 0 || height == 0) return true;
 	
 	Shape glyph;
@@ -270,7 +264,7 @@ LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height,
 	return false;
 }
 
-LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
+LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
 	if (width == 0 || height == 0) return true;
 	Shape glyph;
 	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {

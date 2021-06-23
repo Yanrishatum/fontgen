@@ -51,13 +51,11 @@ class Main {
 				Sys.println("[Info] Output format: text .fnt");
 			}
 			
-			Msdfgen.setParameters(dfSize, fontSize);
-			
 			var stamp = ts();
 			var renderers:Array<GlyphRender> = [];
 			for ( inp in config.inputs ) {
 				if (info) Sys.println("[Info] TTF: " + inp);
-				renderers.push(new GlyphRender(inp));
+				renderers.push(new GlyphRender(inp, config));
 			}
 			var ttfParse = ts();
 			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
@@ -138,17 +136,17 @@ class Main {
 					case MSDF:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
+								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfSize);
 						}
 					case SDF:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
+								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfSize);
 						}
 					case PSDF:
 						for (g in renderer.renderGlyphs) {
 							if (g.width != 0 && g.height != 0)
-								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
+								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfSize);
 						}
 					case Raster:
 						for (g in renderer.renderGlyphs) {
