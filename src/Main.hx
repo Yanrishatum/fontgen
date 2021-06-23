@@ -12,6 +12,10 @@ import GlyphRender;
 import DataTypes;
 import msdfgen.Msdfgen;
 
+typedef Ctx = {
+	renderers:Array<GlyphRender>,
+	glyphs:Array<GlyphInfo>
+}
 class Main {
 	static inline var SIZE:Int = 4096;
 	
@@ -40,15 +44,8 @@ class Main {
 		Msdfgen.initializeFreetype();
 
 		var globRenderers = [];
-		inline function getRenderers() {
-			return if (sharedAtlas)
-				globRenderers;
-			else
-				[];
-		}
 		
-		for (config in configs) {
-			
+		inline function prepareGlyphs(config:GenConfig):Ctx {
 			var rasterMode = config.mode == Raster;
 
 			if (info) {
@@ -57,33 +54,40 @@ class Main {
 				if (!rasterMode) Sys.println("[Info] SDF size: " + config.dfSize);
 				Sys.println("[Info] Output format: text .fnt");
 			}
-			
+
 			var stamp = ts();
-			var renderers:Array<GlyphRender> = getRenderers();
+			var renderers:Array<GlyphRender> = [];
 			for ( inp in config.inputs ) {
 				if (info) Sys.println("[Info] TTF: " + inp);
 				renderers.push(new GlyphRender(inp, config));
 			}
 			var ttfParse = ts();
 			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
-			
+
 			var glyphs:Array<GlyphInfo> = fillGlyphs(config, renderers, ttfParse);
-			
+			return {renderers:renderers, glyphs:glyphs};
+		}
+
+//		inline function
+		
+		for (config in configs) {
+			var stamp = ts();
+			var ctx = prepareGlyphs(config);
 			var charsetProcess = ts();
-			packGlyphs(config.packer, glyphs, config.spacing.x, config.spacing.y);
+			packGlyphs(config.packer, ctx.glyphs, config.spacing.x, config.spacing.y);
 
 			var glyphPacking = ts();
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
 			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
 
 			var pngPath = Path.withExtension(config.output, "png");
-			renderAtlas(pngPath, renderers, config);
+			renderAtlas(pngPath, ctx.renderers, config);
 
 			var glyphRendering = ts();
 			if (info) Sys.println("[Info] Writing PNG file to " + pngPath);
 			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
 			
-			writeFntFile(pngPath, config, glyphs, renderers[0]);
+			writeFntFile(pngPath, config, ctx.glyphs, ctx.renderers[0]);
 			
 			Msdfgen.unloadFonts();
 
