@@ -40,9 +40,6 @@ class Main {
 		for (config in configs) {
 			
 			var rasterMode = config.mode == Raster;
-			var dfSize = rasterMode ? 0 : config.dfSize;
-			var halfDF = (dfSize * .5);
-			var fontSize = config.fontSize;
 
 			if (info) {
 				Sys.println("[Info] Rendering mode: " + config.mode);
@@ -110,45 +107,12 @@ class Main {
 			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
 			
 			Msdfgen.beginAtlas(atlasWidth, atlasHeight, (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000, rasterR8);
-			var paddingLeft = config.padding.left;
-			var paddingTop = config.padding.top;
-			var paddingBottom = config.padding.bottom;
 
 			for (renderer in renderers) {
 				if (renderer.renderGlyphs.length == 0) continue;
 				if (info)
 					Sys.println("[Info] Started rendering glyphs from " + renderer.file);
-				
-				
-				inline function glyphWidth(g:GlyphInfo) return g.width;
-				inline function glyphHeight(g:GlyphInfo) return g.height;
-				inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
-				inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-				inline function translateX(g:GlyphInfo) return  - (0.5 - g.xOffset) ;
-				inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
-				
-				switch (config.mode) {
-					case MSDF:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfSize);
-						}
-					case SDF:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfSize);
-						}
-					case PSDF:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfSize);
-						}
-					case Raster:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, g.width, g.height, canvasX(g) + paddingLeft, canvasY(g) + paddingTop); // todo is +padding required here, g.rect already contains it.
-						}
-				}
+				renderer.renderToAtlas();
 			}
 			
 			var pngPath = Path.withExtension(config.output, "png");

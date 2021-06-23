@@ -85,6 +85,42 @@ class GlyphRender {
 		}
 		return g.char == -1 ? null : g;
 	}
+
+	public function renderToAtlas(){
+		var paddingLeft = config.padding.left;
+		var paddingTop = config.padding.top;
+		var paddingBottom = config.padding.bottom;
+		var halfDF = (dfRange * .5);
+		inline function glyphWidth(g:GlyphInfo) return g.width;
+		inline function glyphHeight(g:GlyphInfo) return g.height;
+		inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
+		inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
+		inline function translateX(g:GlyphInfo) return  - (0.5 - g.xOffset) ;
+		inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
+
+		switch (config.mode) {
+			case MSDF:
+				for (g in renderGlyphs) {
+					if (g.width != 0 && g.height != 0)
+						Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfRange);
+				}
+			case SDF:
+				for (g in renderGlyphs) {
+					if (g.width != 0 && g.height != 0)
+						Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfRange);
+				}
+			case PSDF:
+				for (g in renderGlyphs) {
+					if (g.width != 0 && g.height != 0)
+						Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW, dfRange);
+				}
+			case Raster:
+				for (g in renderGlyphs) {
+					if (g.width != 0 && g.height != 0)
+						Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, g.width, g.height, canvasX(g) + paddingLeft, canvasY(g) + paddingTop); // todo is +padding required here, g.rect already contains it.
+				}
+		}
+	}
 	
 }
 
