@@ -85,48 +85,10 @@ class Main {
 			if (info) Sys.println("[Info] Writing PNG file to " + pngPath);
 			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
 			
-			// TODO: Optimize: Start building file right away.
-			var file = new FntFile(config, renderers[0]);
-			
-			file.texture = Path.withoutDirectory(pngPath);
-			file.textureWidth = atlasWidth;
-			file.textureHeight = atlasHeight;
-			
-			for (g in glyphs) {
-				file.chars.push({
-					id: g.char,
-					x: Std.int(g.rect.x),
-					y: Std.int(g.rect.y),
-					w: g.width ,
-					h: g.height ,
-					xa: g.advance,
-					xo: g.xOffset,
-					yo: (file.base - g.yOffset),
-				});
-			}
-			
-			final len = glyphs.length;
-			for (i in 0...len) {
-				var left = glyphs[i];
-				var slot = left.renderer.slot;
-				for (j in (i+1)...len) {
-					var right = glyphs[j];
-					if (right.renderer.slot == slot) {
-						var kern = Msdfgen.getKerning(slot, left.char, right.char);
-						if (kern != 0) {
-							file.kernings.push({ first: left.char, second: right.char, amount: kern });
-						}
-						kern = Msdfgen.getKerning(slot, right.char, left.char);
-						if (kern != 0) {
-							file.kernings.push({ first: right.char, second: left.char, amount: kern });
-						}
-					}
-				}
-			}
+			writeFntFile(pngPath, config, glyphs, renderers[0]);
 			
 			Msdfgen.unloadFonts();
-			File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
-			
+
 			var ttfGen = ts();
 			if (timings) {
 				Sys.println("[Timing] FNT generation: " + timeStr(ttfGen - glyphRendering));
@@ -156,6 +118,48 @@ class Main {
 		}
 
 		Msdfgen.endAtlas(pngPath);
+	}
+
+	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer){
+		// TODO: Optimize: Start building file right away.
+		var file = new FntFile(config, renderer);
+
+		file.texture = Path.withoutDirectory(pngPath);
+		file.textureWidth = atlasWidth;
+		file.textureHeight = atlasHeight;
+
+		for (g in glyphs) {
+			file.chars.push({
+				id: g.char,
+				x: Std.int(g.rect.x),
+				y: Std.int(g.rect.y),
+				w: g.width ,
+				h: g.height ,
+				xa: g.advance,
+				xo: g.xOffset,
+				yo: (file.base - g.yOffset),
+			});
+		}
+
+		final len = glyphs.length;
+		for (i in 0...len) {
+			var left = glyphs[i];
+			var slot = left.renderer.slot;
+			for (j in (i+1)...len) {
+				var right = glyphs[j];
+				if (right.renderer.slot == slot) {
+					var kern = Msdfgen.getKerning(slot, left.char, right.char);
+					if (kern != 0) {
+						file.kernings.push({ first: left.char, second: right.char, amount: kern });
+					}
+					kern = Msdfgen.getKerning(slot, right.char, left.char);
+					if (kern != 0) {
+						file.kernings.push({ first: right.char, second: left.char, amount: kern });
+					}
+				}
+			}
+		}
+		File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
 	}
 
 	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, extendWidth:Int, extendHeight:Int) {
