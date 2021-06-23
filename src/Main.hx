@@ -43,7 +43,7 @@ class Main {
 			var dfSize = rasterMode ? 0 : config.dfSize;
 			var halfDF = (dfSize * .5);
 			var fontSize = config.fontSize;
-			
+
 			if (info) {
 				Sys.println("[Info] Rendering mode: " + config.mode);
 				Sys.println("[Info] Font size: " + config.fontSize);
@@ -107,7 +107,7 @@ class Main {
 			var extendWidth = config.padding.left + config.padding.right + dfSize + config.spacing.x;
 			var extendHeight = config.padding.top + config.padding.bottom + dfSize + config.spacing.y;
 			
-			packGlyphs(config.packer, glyphs, fontSize, extendWidth, extendHeight);
+			packGlyphs(config.packer, glyphs, extendWidth, extendHeight);
 			
 			extendWidth -= config.spacing.x;
 			extendHeight -= config.spacing.y;
@@ -220,7 +220,7 @@ class Main {
 		}
 	}
 	
-	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, fontSize:Int, extendWidth:Int, extendHeight:Int) {
+	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, extendWidth:Int, extendHeight:Int) {
 		var inverse = config.sort.charCodeAt(0) == '-'.code;
 		var sortAlgo = switch (inverse ? config.sort.substr(1) : config.sort) {
 			case "width": widthSort;
