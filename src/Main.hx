@@ -14,8 +14,10 @@ import msdfgen.Msdfgen;
 
 typedef Ctx = {
 	renderers:Array<GlyphRender>,
-	glyphs:Array<GlyphInfo>
+	glyphs:Array<GlyphInfo>,
+	?pngPath:String
 }
+
 class Main {
 	static inline var SIZE:Int = 4096;
 	
@@ -68,11 +70,11 @@ class Main {
 			return {renderers:renderers, glyphs:glyphs};
 		}
 
-//		inline function
-		
-		for (config in configs) {
-			var stamp = ts();
-			var ctx = prepareGlyphs(config);
+		inline function sharedConfig(config){
+			return if (sharedAtlas) configs[0] else config;
+		}
+
+		inline function buildAtlas(ctx, config:AtlasConfig){
 			var charsetProcess = ts();
 			packGlyphs(config.packer, ctx.glyphs, config.spacing.x, config.spacing.y);
 
@@ -80,23 +82,24 @@ class Main {
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
 			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
 
-			var pngPath = Path.withExtension(config.output, "png");
-			renderAtlas(pngPath, ctx.renderers, config);
+			ctx.pngPath = Path.withExtension(config.output, "png");
+			renderAtlas(ctx.pngPath, ctx.renderers, config);
 
 			var glyphRendering = ts();
-			if (info) Sys.println("[Info] Writing PNG file to " + pngPath);
+			if (info) Sys.println("[Info] Writing PNG file to " + ctx.pngPath);
 			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
-			
-			writeFntFile(pngPath, config, ctx.glyphs, ctx.renderers[0]);
-			
-			Msdfgen.unloadFonts();
+		}
 
-			var ttfGen = ts();
+		for (config in configs) {
+			var stamp = ts();
+			var ctx = prepareGlyphs(config);
+			buildAtlas(ctx, config);
+			writeFntFile(ctx.pngPath, config, ctx.glyphs, ctx.renderers[0]);
+			Msdfgen.unloadFonts();
 			if (timings) {
-				Sys.println("[Timing] FNT generation: " + timeStr(ttfGen - glyphRendering));
+				var ttfGen = ts();
 				Sys.println("[Timing] Total config processing time: " + timeStr(ttfGen - stamp));
 			}
-			
 		}
 		
 		Msdfgen.deinitializeFreetype();
@@ -105,7 +108,7 @@ class Main {
 		}
 	}
 
-	static function renderAtlas(pngPath, renderers:Array<GlyphRender>, config:GenConfig) {
+	static function renderAtlas(pngPath, renderers:Array<GlyphRender>, config:AtlasConfig) {
 		var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
 		var rasterMode = config.mode == Raster;
 		var bgColor = (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000;
@@ -124,6 +127,7 @@ class Main {
 
 	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer){
 		// TODO: Optimize: Start building file right away.
+		var glyphRendering = ts();
 		var file = new FntFile(config, renderer);
 
 		file.texture = Path.withoutDirectory(pngPath);
@@ -162,6 +166,11 @@ class Main {
 			}
 		}
 		File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
+		var ttfGen = ts();
+		if (timings) {
+			Sys.println("[Timing] FNT generation: " + timeStr(ttfGen - glyphRendering));
+		}
+
 	}
 
 	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, extendWidth:Int, extendHeight:Int) {
