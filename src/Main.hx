@@ -70,10 +70,6 @@ class Main {
 			return {renderers:renderers, glyphs:glyphs};
 		}
 
-		inline function sharedConfig(config){
-			return if (sharedAtlas) configs[0] else config;
-		}
-
 		inline function buildAtlas(ctx, config:AtlasConfig){
 			var charsetProcess = ts();
 			packGlyphs(config.packer, ctx.glyphs, config.spacing.x, config.spacing.y);
@@ -90,15 +86,43 @@ class Main {
 			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
 		}
 
-		for (config in configs) {
-			var stamp = ts();
-			var ctx = prepareGlyphs(config);
-			buildAtlas(ctx, config);
-			writeFntFile(ctx.pngPath, config, ctx.glyphs, ctx.renderers[0]);
+		if (sharedAtlas) {
+			var sharedCfg = configs[0];
+			var ctxs = [];
+			for (config in configs) {
+				var ctx = prepareGlyphs(config);
+				ctxs.push(ctx);
+			}
+			var mergedCtxs = {
+				renderers: [],
+				glyphs:[],
+				pngPath:Path.withExtension(sharedCfg.output, "png")
+			}
+			for (ctx in ctxs) {
+				for (r in ctx.renderers)
+					mergedCtxs.renderers.push(r);
+				for (r in ctx.glyphs)
+					mergedCtxs.glyphs.push(r);
+			}
+			buildAtlas(mergedCtxs, configs[0]);
+			for (i in 0...configs.length) {
+				var cfg:GenConfig = configs[i];
+				var ctx = ctxs[i];
+				cfg.spacing = sharedCfg.spacing;
+				writeFntFile(mergedCtxs.pngPath, cfg, ctx.glyphs, ctx.renderers[0]);
+			}
 			Msdfgen.unloadFonts();
-			if (timings) {
-				var ttfGen = ts();
-				Sys.println("[Timing] Total config processing time: " + timeStr(ttfGen - stamp));
+		} else {
+			for (config in configs) {
+				var stamp = ts();
+				var ctx = prepareGlyphs(config);
+				buildAtlas(ctx, config);
+				writeFntFile(ctx.pngPath, config, ctx.glyphs, ctx.renderers[0]);
+				Msdfgen.unloadFonts();
+				if (timings) {
+					var ttfGen = ts();
+					Sys.println("[Timing] Total config processing time: " + timeStr(ttfGen - stamp));
+				}
 			}
 		}
 		
@@ -325,7 +349,7 @@ class Main {
 					globalNonprint = true;
 				case "-r8raster":
 					globalr8 = true;
-				case "-sharedAtlas":
+				case "-sharedatlas":
 					sharedAtlas = true;
 				case "-help":
 					printHelp();

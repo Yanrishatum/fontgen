@@ -107,6 +107,7 @@ See [`test/config.json`](test/config.json) for example config.
 * `-verbose` - enables all logging.
 * `-help` - Prints [help](src/help.txt) file and exits.
 * `-stdin` - Allows to pass json config via stdin. Note that current working directory will be considered as a root path for font lookup.
+* `-sharedatlas` - Enables shared texture for all configs. Spacing settings and textrue filename will be taken from the first config.
 
 ### Processor pptions
 All processor options can be used as switches to enable them on all configurations. For example `-allownonprint`
