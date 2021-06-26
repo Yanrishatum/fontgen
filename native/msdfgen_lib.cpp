@@ -188,15 +188,8 @@ void normalizeShape(Shape &shape) {
 	}
 }
 
-LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
-	if (width == 0 || height == 0) return true;
-	
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		Bitmap<float, 1> sdf(width, height);
-		double scale = fonts[slot]->scale;
-		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+inline void copyBitmapToAtlas(Bitmap<float, 1> sdf, int width, int height, int ox, int oy, bool ccw) {
+		std::cout << "[Foo] bar \n";
 		oy += height;
 		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
@@ -221,6 +214,18 @@ LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, 
 				}
 			}
 		}
+}
+
+LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		Bitmap<float, 1> sdf(width, height);
+		double scale = fonts[slot]->scale;
+		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyBitmapToAtlas(sdf, width, height, ox, oy, ccw);
 		return true;
 	}
 	return false;
@@ -235,30 +240,7 @@ LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height,
 		Bitmap<float, 1> sdf(width, height);
 		double scale = fonts[slot]->scale;
 		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
-		oy += height;
-		if (ccw) {
-			for (int y = height - 1; y >= 0; y--) {
-				byte* it = atlasPixels(ox, oy - y);
-				for (int x = 0; x < width; x++) {
-					byte px = pixelFloatToByte(1.f - *sdf(x, y));
-					*it++ = px;
-					*it++ = px;
-					*it++ = px;
-					*it++ = 0xff;
-				}
-			}
-		} else {
-			for (int y = height - 1; y >= 0; y--) {
-				byte* it = atlasPixels(ox, oy - y);
-				for (int x = 0; x < width; x++) {
-					byte px = pixelFloatToByte(*sdf(x, y));
-					*it++ = px;
-					*it++ = px;
-					*it++ = px;
-					*it++ = 0xff;
-				}
-			}
-		}
+		copyBitmapToAtlas(sdf, width, height, ox, oy, ccw);
 		return true;
 	}
 	return false;
