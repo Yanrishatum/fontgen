@@ -76,7 +76,7 @@ class GlyphRender {
 				g.char = char;
 				g.width = m.width + extendWidth;
 				g.height = m.height+ extendHeight;
-				g.xOffset = m.offsetX- paddingLeft - Math.ceil(dfRange/2);
+				g.xOffset = m.offsetX + paddingLeft + Math.ceil(dfRange/2);
 				g.yOffset = m.offsetY + paddingTop + Math.ceil(dfRange/2);
 				g.advance = m.advanceX;
 				g.descent = m.descent;
