@@ -188,7 +188,7 @@ void normalizeShape(Shape &shape) {
 	}
 }
 
-inline void copyBitmapToAtlas(Bitmap<float, 1> sdf, int width, int height, int ox, int oy, bool ccw) {
+inline void copyGrayBitmapToAtlas(Bitmap<float, 1> sdf, int width, int height, int ox, int oy, bool ccw) {
 		std::cout << "[Foo] bar \n";
 		oy += height;
 		if (ccw) {
@@ -216,45 +216,7 @@ inline void copyBitmapToAtlas(Bitmap<float, 1> sdf, int width, int height, int o
 		}
 }
 
-LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
-	if (width == 0 || height == 0) return true;
-	
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		Bitmap<float, 1> sdf(width, height);
-		double scale = fonts[slot]->scale;
-		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
-		copyBitmapToAtlas(sdf, width, height, ox, oy, ccw);
-		return true;
-	}
-	return false;
-}
-
-LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
-	if (width == 0 || height == 0) return true;
-	
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		Bitmap<float, 1> sdf(width, height);
-		double scale = fonts[slot]->scale;
-		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
-		copyBitmapToAtlas(sdf, width, height, ox, oy, ccw);
-		return true;
-	}
-	return false;
-}
-
-LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
-	if (width == 0 || height == 0) return true;
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		edgeColoringSimple(glyph, 3, 0);
-		Bitmap<float, 3> msdf(width, height);
-		double scale = fonts[slot]->scale;
-		generateMSDF(msdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+inline void copyColorBitmapToAtlas(Bitmap<float, 3> msdf, int width, int height, int ox, int oy, bool ccw){
 		oy += height;
 		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
@@ -277,6 +239,49 @@ LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height,
 				}
 			}
 		}
+
+}
+
+LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		Bitmap<float, 1> sdf(width, height);
+		double scale = fonts[slot]->scale;
+		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, ccw);
+		return true;
+	}
+	return false;
+}
+
+LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		Bitmap<float, 1> sdf(width, height);
+		double scale = fonts[slot]->scale;
+		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, ccw);
+		return true;
+	}
+	return false;
+}
+
+LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		edgeColoringSimple(glyph, 3, 0);
+		Bitmap<float, 3> msdf(width, height);
+		double scale = fonts[slot]->scale;
+		generateMSDF(msdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyColorBitmapToAtlas(msdf, width, height, ox, oy, ccw);
 		return true;
 	}
 	return false;
