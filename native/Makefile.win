@@ -4,6 +4,6 @@ msdfgen_lib.dll: msdfgen_lib.obj
 	cl /LD /MD msdfgen_lib.obj "msdfgen-bin\Release\msdfgen.lib" "msdfgen-bin\Release\msdfgen-ext.lib" "msdfgen\freetype\win32\freetype.lib"
 
 msdfgen_lib.obj: msdfgen_lib.cpp
-	cl /c /MD msdfgen_lib.cpp /I . /I "msdfgen\freetype\include" /I "msdfgen\include"
+	cl /c /MD msdfgen_lib.cpp /I . /I "msdfgen\freetype\include" /I "msdfgen\include" /I "msdfgen/ext"
 
 .PHONY: all

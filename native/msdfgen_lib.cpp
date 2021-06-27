@@ -3,6 +3,7 @@
 #include <iostream>
 #include "msdfgen_lib.h"
 #include "msdfgen/msdfgen.h"
+#include "msdfgen/ext/import-svg.h"
 #include "msdfgen/msdfgen-ext.h"
 #include <ft2build.h>
 #include <lodepng.h>
@@ -337,6 +338,54 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 			// TODO: Other pixel modes
 			return false;
 	}
+}
+
+LIB_EXPORT void generateSDFPath(const char *path, double width, double height,  int ox, int oy, double tx, double ty, double range, double scale) {
+		Vector2 dims(width, height);
+		Shape shape;
+			// slot->scale = (double)fontSize / (double)slot->ft->units_per_EM * 64.;
+		buildFromPath(shape, path, dims.length());
+		bool autoFrame = true;
+		double range = 1;
+		double pxRange = 2;
+		Vector2 translate;
+		Vector2 scale = 1;
+		bool scaleSpecified = false;
+		Shape::Bounds bounds = { };
+
+		bounds = shape.get()
+
+		if (autoFrame) {
+				double l = bounds.l, b = bounds.b, r = bounds.r, t = bounds.t;
+				Vector2 frame(width, height);
+				// if (rangeMode == RANGE_UNIT)
+				// 	l -= .5*range, b -= .5*range, r += .5*range, t += .5*range;
+				else if (!scaleSpecified)
+					frame -= pxRange;
+				if (l >= r || b >= t)
+					l = 0, b = 0, r = 1, t = 1;
+				if (frame.x <= 0 || frame.y <= 0)
+					ABORT("Cannot fit the specified pixel range.");
+				Vector2 dims(r-l, t-b);
+				if (scaleSpecified)
+					translate = .5*(frame/scale-dims)-Vector2(l, b);
+				else {
+					if (dims.x*frame.y < dims.y*frame.x) {
+						translate.set(.5*(frame.x/frame.y*dims.y-dims.x)-l, -b);
+						scale = avgScale = frame.y/dims.y;
+					} else {
+						translate.set(-l, .5*(frame.y/frame.x*dims.x-dims.y)-b);
+						scale = avgScale = frame.x/dims.x;
+					}
+				}
+				if (rangeMode == RANGE_PX && !scaleSpecified)
+					translate += .5*pxRange/scale;
+			}
+
+		normalizeShape(shape);
+		Bitmap<float, 1> sdf(width, height);
+		generateSDF(sdf, shape, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, true);
 }
 
 #ifdef __cplusplus
