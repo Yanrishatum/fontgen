@@ -12,7 +12,7 @@ pushd native
 nmake Makefile.win
 popd
 copy native\msdfgen_lib.dll bin\msdfgen_lib.dll
-haxe build.hxml -D ammer.hl.hlInclude=%HLPATH%/include -D ammer.hl.hlLibrary=%HLPATH%
+haxe build.hxml
 pushd bin
 hl fontgen.hl ../test/config.json -verbose
 popd
