@@ -1,4 +1,4 @@
-del /q native\msdfgen-bin
+rd /q /s native\msdfgen-bin
 cd native
 mkdir msdfgen-bin
 cd msdfgen-bin

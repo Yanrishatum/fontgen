@@ -1,5 +1,5 @@
-del /q bin\hlc
-del /q native\hl
+rd /s /q bin\hlc
+rd /s /q native\hl
 del native\msdfgen_lib.obj
 del native\msdfgen_lib.exp
 del native\msdfgen_lib.lib
