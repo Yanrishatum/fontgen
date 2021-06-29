@@ -26,7 +26,7 @@ struct FontSlot {
 };
 
 // Haxe struct for font metrics.
-struct FontMetrics {
+struct FontMetricsInternal {
 	int ascent;
 	int descent;
 	int unitsPerEm;
@@ -85,7 +85,7 @@ LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data) {
 		slot->scale = (double)fontSize / (double)slot->ft->units_per_EM * 64.;
 		FT_Set_Pixel_Sizes(slot->ft, 0, fontSize);
 		
-		FontMetrics* metrics = reinterpret_cast<FontMetrics*>(metrics_data);
+		FontMetricsInternal* metrics = reinterpret_cast<FontMetricsInternal*>(metrics_data);
 		metrics->ascent = slot->ft->ascender;
 		metrics->descent = slot->ft->descender;
 		metrics->unitsPerEm = slot->ft->units_per_EM;
