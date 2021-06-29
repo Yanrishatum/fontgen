@@ -1,3 +1,4 @@
+del /q bin\hlc
 del /q native\hl
 del native\msdfgen_lib.obj
 del native\msdfgen_lib.exp
