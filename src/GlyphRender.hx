@@ -4,7 +4,7 @@ import msdfgen.Msdfgen;
 import binpacking.Rect;
 import DataTypes;
 
-class GlyphRender {
+class GlyphRender implements  Render {
 	
 	static var METRICS:FontMetrics = new FontMetrics();
 	static var GLYPH:GlyphMetrics = new GlyphMetrics();

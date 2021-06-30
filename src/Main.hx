@@ -14,7 +14,7 @@ import DataTypes;
 import msdfgen.Msdfgen;
 
 typedef Ctx = {
-	renderers:Array<GlyphRender>,
+	renderers:Array<Render>,
 	glyphs:Array<GlyphInfo>,
 	?pngPath:String
 }
@@ -59,7 +59,7 @@ class Main {
 			}
 
 			var stamp = ts();
-			var renderers:Array<GlyphRender> = [];
+			var renderers:Array<Render> = [];
 			for ( inp in config.inputs ) {
 				if (info) Sys.println("[Info] TTF: " + inp);
 				renderers.push(new GlyphRender(inp, config));
@@ -71,7 +71,7 @@ class Main {
 			return {renderers:renderers, glyphs:glyphs};
 		}
 
-		inline function buildAtlas(ctx, config:AtlasConfig){
+		inline function buildAtlas(ctx:Ctx, config:AtlasConfig){
 			var charsetProcess = ts();
 			packGlyphs(config.packer, ctx.glyphs, config.spacing.x, config.spacing.y);
 
@@ -94,7 +94,7 @@ class Main {
 				var ctx = prepareGlyphs(config);
 				ctxs.push(ctx);
 			}
-			var mergedCtxs = {
+			var mergedCtxs:Ctx = {
 				renderers: [],
 				glyphs:[],
 				pngPath:Path.withExtension(sharedCfg.output, "png")
@@ -110,7 +110,7 @@ class Main {
 				var cfg:GenConfig = configs[i];
 				var ctx = ctxs[i];
 				cfg.spacing = sharedCfg.spacing;
-				writeFntFile(mergedCtxs.pngPath, cfg, ctx.glyphs, ctx.renderers[0]);
+				writeFntFile(mergedCtxs.pngPath, cfg, ctx.glyphs, cast ctx.renderers[0]);
 			}
 			Msdfgen.unloadFonts();
 		} else {
@@ -118,7 +118,7 @@ class Main {
 				var stamp = ts();
 				var ctx = prepareGlyphs(config);
 				buildAtlas(ctx, config);
-				writeFntFile(ctx.pngPath, config, ctx.glyphs, ctx.renderers[0]);
+				writeFntFile(ctx.pngPath, config, ctx.glyphs, cast ctx.renderers[0]);
 				Msdfgen.unloadFonts();
 				if (timings) {
 					var ttfGen = ts();
@@ -133,7 +133,7 @@ class Main {
 		}
 	}
 
-	static function renderAtlas(pngPath, renderers:Array<GlyphRender>, config:AtlasConfig) {
+	static function renderAtlas(pngPath, renderers:Array<Render>, config:AtlasConfig) {
 		var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
 		var rasterMode = config.mode == Raster;
 		var bgColor = (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000;
@@ -150,7 +150,7 @@ class Main {
 		Msdfgen.endAtlas(pngPath);
 	}
 
-	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer){
+	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer:GlyphRender){
 		// TODO: Optimize: Start building file right away.
 		var glyphRendering = ts();
 		var file = new FntFile(config, renderer);
@@ -262,7 +262,7 @@ class Main {
 		}
 	}
 
-	static function fillGlyphs(config:GenConfig, renderers:Array<GlyphRender>, lastStamp:Float) {
+	static function fillGlyphs(config:GenConfig, renderers:Array<Render>, lastStamp:Float) {
 		// Find all corresponding glyphs to render.
 		var missing:Array<Int> = [];
 		var glyphs:Array<GlyphInfo> = [];
