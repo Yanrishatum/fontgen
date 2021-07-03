@@ -40,7 +40,6 @@ class Main {
 	inline static function timeStr(ts:Float) return Std.string(Math.round(ts * 1000)) + "ms";
 
 	static function main() {
-		loadSvg();
 		var configs = readInput();
 		
 		
@@ -95,6 +94,12 @@ class Main {
 				var ctx = prepareGlyphs(config);
 				ctxs.push(ctx);
 			}
+			var sr = new SvgRender();
+			sr.reg(1);
+			ctxs.push({
+				renderers:[sr],
+				glyphs:[sr.get(1)]
+			});
 			var mergedCtxs:Ctx = {
 				renderers: [],
 				glyphs:[],
@@ -487,12 +492,7 @@ class Main {
 		return cfg;
 	}
 
-	static function loadSvg() {
-		var svg:Xml = Parser.parse(File.getContent("blob.svg"));
-		var paths = svg.elementsNamed("svg").next().elementsNamed("g").next().elementsNamed("path").next();
-		Sys.println(paths);
-		return paths.toString();
-	}
+
 	
 	static function widthSort(a:GlyphInfo, b:GlyphInfo):Int
 	{
