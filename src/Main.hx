@@ -12,6 +12,7 @@ import binpacking.MaxRectsPacker;
 import GlyphRender;
 import DataTypes;
 import msdfgen.Msdfgen;
+import Render;
 
 typedef Ctx = {
 	renderers:Array<Render>,
