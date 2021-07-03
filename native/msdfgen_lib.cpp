@@ -340,32 +340,36 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 	}
 }
 
-LIB_EXPORT void generateSDFPath(const char *path, double width, double height,  int ox, int oy, double tx, double ty, double range, double scale) {
+LIB_EXPORT bool generateSDFPath(const char *path, double width, double height,  int ox, int oy, double tx, double ty, double range, double _scale) {
 		Vector2 dims(width, height);
 		Shape shape;
 			// slot->scale = (double)fontSize / (double)slot->ft->units_per_EM * 64.;
 		buildFromPath(shape, path, dims.length());
 		bool autoFrame = true;
-		double range = 1;
-		double pxRange = 2;
+		double pxRange = range;
 		Vector2 translate;
 		Vector2 scale = 1;
+		double avgScale = .5*(scale.x+scale.y);
 		bool scaleSpecified = false;
 		Shape::Bounds bounds = { };
+		normalizeShape(shape);
 
-		bounds = shape.get()
+		bounds = shape.getBounds();
 
 		if (autoFrame) {
 				double l = bounds.l, b = bounds.b, r = bounds.r, t = bounds.t;
 				Vector2 frame(width, height);
 				// if (rangeMode == RANGE_UNIT)
 				// 	l -= .5*range, b -= .5*range, r += .5*range, t += .5*range;
-				else if (!scaleSpecified)
+				// else 
+				if (!scaleSpecified)
 					frame -= pxRange;
 				if (l >= r || b >= t)
 					l = 0, b = 0, r = 1, t = 1;
-				if (frame.x <= 0 || frame.y <= 0)
-					ABORT("Cannot fit the specified pixel range.");
+				if (frame.x <= 0 || frame.y <= 0) {
+					std::cout << "Cannot fit the specified pixel range.";
+					return false;
+				}
 				Vector2 dims(r-l, t-b);
 				if (scaleSpecified)
 					translate = .5*(frame/scale-dims)-Vector2(l, b);
@@ -378,14 +382,17 @@ LIB_EXPORT void generateSDFPath(const char *path, double width, double height,  
 						scale = avgScale = frame.x/dims.x;
 					}
 				}
-				if (rangeMode == RANGE_PX && !scaleSpecified)
+				// if (rangeMode == RANGE_PX && !scaleSpecified)
+				if (!scaleSpecified)
 					translate += .5*pxRange/scale;
 			}
-
-		normalizeShape(shape);
+		Vector2 __scale(_scale, _scale);
+		Projection projection(scale, translate);
+		// Vector2 __scale(1., 1.);
 		Bitmap<float, 1> sdf(width, height);
-		generateSDF(sdf, shape, range / scale, scale, Vector2(tx/scale, ty/scale));
-		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, true);
+		generateSDF(sdf, shape, range , __scale, Vector2(tx, ty));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, false);
+		return true;
 }
 
 #ifdef __cplusplus
