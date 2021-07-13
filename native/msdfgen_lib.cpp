@@ -190,7 +190,6 @@ void normalizeShape(Shape &shape) {
 }
 
 inline void copyGrayBitmapToAtlas(Bitmap<float, 1> sdf, int width, int height, int ox, int oy, bool ccw) {
-		std::cout << "[Foo] bar \n";
 		oy += height;
 		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
