@@ -15,6 +15,7 @@ enum abstract SdfMode(String) from String to String {
 typedef GenConfig = AtlasConfig & {
 	var input:String; // path to ttf
 	var inputs:Array<String>;
+	var svgInput:Null<Dynamic>;
 	var charset:Array<Dynamic>; // Charset info
 	var fontSize:Null<Int>;
 	var padding: { top: Null<Int>, bottom: Null<Int>, left: Null<Int>, right: Null<Int> };

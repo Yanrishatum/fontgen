@@ -29,7 +29,7 @@ class FntFile {
 	
 	public var kernings:Array<{ first:Int, second:Int, amount:Int }> = [];
 	
-	public function new(config:GenConfig, ttf:GlyphRender) {
+	public function new(config:GenConfig, ttf:FontProps) {
 		dfMode = config.mode;
 		dfSize = config.dfSize;
 		size = config.fontSize;
@@ -71,4 +71,11 @@ class FntFile {
 		return lines.join("\r\n");
 	}
 	
+}
+typedef FontProps = {
+		var fontName:String;
+		var bold:Bool;
+		var italic:Bool;
+		var baseLine:Int;
+		var lineHeight:Int;
 }

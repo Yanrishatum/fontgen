@@ -25,5 +25,5 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	public static function generatePSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool, range:Float):Bool;
 	public static function generateMSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool, range:Float):Bool;
 	public static function rasterizeGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int):Bool;
-	public static function generateSDFPath(path:String, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Void;
+	public static function generateSDFPath(path:String, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
 }

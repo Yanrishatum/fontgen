@@ -48,6 +48,22 @@ class Main {
 
 		var globRenderers = [];
 		
+		inline function prepareSvgGlyphs(config:GenConfig):Ctx {
+			var rend = new SvgRender();
+			var glyphs:Array<GlyphInfo> = [];
+			for (char in Reflect.fields(config.svgInput)) {
+				var code = char.charCodeAt(0);
+				var val:String = Reflect.field(config.svgInput, char);
+				var location = val.split(":");
+				var fileName = location[0];
+				var pathName = location.length > 1 ? location[1] : "";
+				var glyph = rend.reg(code, fileName, pathName);
+				glyphs.push(glyph);
+			}
+			
+			return {renderers:[rend], glyphs:glyphs};
+		}
+
 		inline function prepareGlyphs(config:GenConfig):Ctx {
 			var rasterMode = config.mode == Raster;
 
@@ -71,6 +87,13 @@ class Main {
 			return {renderers:renderers, glyphs:glyphs};
 		}
 
+		inline function createContext(config:GenConfig):Ctx {
+			return if (config.svgInput != null)
+				prepareSvgGlyphs(config);
+			else 
+				prepareGlyphs(config);
+		}
+
 		inline function buildAtlas(ctx:Ctx, config:AtlasConfig){
 			var charsetProcess = ts();
 			packGlyphs(config.packer, ctx.glyphs, config.spacing.x, config.spacing.y);
@@ -91,15 +114,10 @@ class Main {
 			var sharedCfg = configs[0];
 			var ctxs = [];
 			for (config in configs) {
-				var ctx = prepareGlyphs(config);
+				var ctx = createContext(config);
 				ctxs.push(ctx);
 			}
-			var sr = new SvgRender();
-			sr.reg(1);
-			ctxs.push({
-				renderers:[sr],
-				glyphs:[sr.get(1)]
-			});
+
 			var mergedCtxs:Ctx = {
 				renderers: [],
 				glyphs:[],
@@ -156,10 +174,44 @@ class Main {
 		Msdfgen.endAtlas(pngPath);
 	}
 
-	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer:GlyphRender){
+	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer:Render){
+		function addKerning(file, glyphs:Array<GlyphInfo>, renderer:GlyphRender) {
+			final len = glyphs.length;
+			for (i in 0...len) {
+			var left = glyphs[i];
+			var slot = left.renderer.slot;
+				for (j in (i+1)...len) {
+					var right = glyphs[j];
+					if (right.renderer.slot == slot) {
+						var kern = Msdfgen.getKerning(slot, left.char, right.char);
+						if (kern != 0) {
+							file.kernings.push({ first: left.char, second: right.char, amount: kern });
+						}
+						kern = Msdfgen.getKerning(slot, right.char, left.char);
+						if (kern != 0) {
+							file.kernings.push({ first: right.char, second: left.char, amount: kern });
+						}
+					}
+				}
+			}	
+		}
+
 		// TODO: Optimize: Start building file right away.
 		var glyphRendering = ts();
-		var file = new FntFile(config, renderer);
+		var file:FntFile;
+		if (Std.isOfType(renderer, GlyphRender)) {
+			var r:GlyphRender = cast renderer;
+			file = new FntFile(config, r);
+			addKerning(file, glyphs, r);
+		} else {
+			file = new FntFile(config, {
+				 fontName:"Svg graphics",
+				 bold:false,
+				 italic:false,
+				 baseLine:0,
+				 lineHeight:24,
+			});
+		}
 
 		file.texture = Path.withoutDirectory(pngPath);
 		file.textureWidth = atlasWidth;
@@ -178,24 +230,6 @@ class Main {
 			});
 		}
 
-		final len = glyphs.length;
-		for (i in 0...len) {
-			var left = glyphs[i];
-			var slot = left.renderer.slot;
-			for (j in (i+1)...len) {
-				var right = glyphs[j];
-				if (right.renderer.slot == slot) {
-					var kern = Msdfgen.getKerning(slot, left.char, right.char);
-					if (kern != 0) {
-						file.kernings.push({ first: left.char, second: right.char, amount: kern });
-					}
-					kern = Msdfgen.getKerning(slot, right.char, left.char);
-					if (kern != 0) {
-						file.kernings.push({ first: right.char, second: left.char, amount: kern });
-					}
-				}
-			}
-		}
 		File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
 		var ttfGen = ts();
 		if (timings) {
@@ -427,6 +461,7 @@ class Main {
 	}
 	
 	static function fillDefaults(cfg:GenConfig):GenConfig {
+
 		if ( cfg.mode == null ) cfg.mode = MSDF;
 		else {
 			cfg.mode = (cfg.mode:String).toLowerCase();
@@ -434,7 +469,8 @@ class Main {
 		}
 		if ( cfg.fontSize == null ) throw "Font size should be specified!";
 		if ( cfg.inputs == null ) {
-			if ( cfg.input == null || !FileSystem.exists(cfg.input) ) throw "Path to TTF file should be specified!";
+			if (( cfg.input == null || !FileSystem.exists(cfg.input) )
+				&& ( cfg.svgInput == null  )) throw "Path to TTF or SVG file should be specified!";
 			cfg.inputs = [cfg.input];
 		} else {
 			if ( cfg.input != null ) cfg.inputs.unshift(cfg.input);
