@@ -28,6 +28,7 @@ LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height,
 LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, int ox, int oy);
 
 LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale);
+LIB_EXPORT char* getBounds(int slot);
 LIB_EXPORT bool generateSDFPath(int slot, double width, double height,  int ox, int oy, double tx, double ty, double range, double scale);
 
 #ifdef __cplusplus

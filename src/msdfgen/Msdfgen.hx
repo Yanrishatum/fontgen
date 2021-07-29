@@ -27,5 +27,18 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	public static function rasterizeGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int):Bool;
 
 	public static function initSvgShape(pathDef:String, fontSize:Int, scale:Float):Int;
+	public static function getBounds(slot:Int):String; 
 	public static function generateSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
+}
+
+class MsdfgenUtils {
+	public static inline function getBounds(slot:Int):Bounds{
+		return haxe.Json.parse(Msdfgen.getBounds(slot));
+	}
+}
+typedef Bounds = {
+	public var l:Float;
+	public var b:Float;
+	public var r:Float;
+	public var t:Float;
 }

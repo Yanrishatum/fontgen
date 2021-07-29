@@ -347,6 +347,14 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 	}
 }
 
+ LIB_EXPORT char* getBounds(int slot){
+ 		Shape* shape = shapes[slot]->shape;
+ 		Shape::Bounds b =  shape->getBounds();
+ 		std::stringstream str;
+ 		str << "{\"l\":" << b.l << ", \"r\":"  << b.r << ", \"t\":" << b.t << ", \"b\":" << b.b << "}";
+ 		return &(str.str()[0]);
+ }
+
 LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale){
 		Shape* shape = new Shape;
 		buildFromPath(*shape, path, fontSize*1.4);
