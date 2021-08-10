@@ -18,12 +18,16 @@ class SvgRender implements Render {
 	public function reg(char:Int, svgfile:String, path = "") {
 		var gi = new GlyphInfo();
 		gi.char = char;
-		gi.width = 64 + 10;
-		gi.height = 64 + 10;
         renderGlyphs.push(gi);
         glyphMap.set(char, gi);
 		var pathDef = loadSvg(svgfile, path);
 		var slotIndex = Msdfgen.initSvgShape(pathDef, 24, 1);
+		var bounds = MsdfgenUtils.getBounds(slotIndex);
+
+		gi.width = Math.ceil(bounds.r - bounds.l + dfRange );
+		gi.height = Math.ceil(bounds.t - bounds.b + dfRange );
+		gi.xOffset = - Math.floor(bounds.l - dfRange/2);
+		gi.yOffset = - Math.ceil(bounds.b - dfRange/2);
 		var descr = {filename:svgfile, pathName: path, slot:slotIndex};
 		svgDescrs.set(char, descr);
 		return gi;
@@ -59,10 +63,10 @@ class SvgRender implements Render {
 	public function renderToAtlas():Void {
         inline function glyphWidth(g:GlyphInfo) return g.width;
 		inline function glyphHeight(g:GlyphInfo) return g.height;
-		inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
+		inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x) ;
 		inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-		inline function translateX(g:GlyphInfo) return  - (0.5 - g.xOffset) +dfRange / 2  ;
-		inline function translateY(g:GlyphInfo) return dfRange/2 ;// Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
+		inline function translateX(g:GlyphInfo) return  g.xOffset - 0.5 ;
+		inline function translateY(g:GlyphInfo) return g.yOffset + 0.5;
 		for (g in renderGlyphs) {
 			var descr = svgDescrs.get(g.char);
 			if (g.width != 0 && g.height != 0)

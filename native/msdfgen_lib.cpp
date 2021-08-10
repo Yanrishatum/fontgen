@@ -28,8 +28,6 @@ struct FontSlot {
 
 struct ShapeSlot {
 	Shape* shape;
-	int hSizePx;
-	int vSizePx;
 	double scale;
 };
 
@@ -365,14 +363,12 @@ LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale){
 		// double avgScale = .5*(scale.x+scale.y);
 		bool scaleSpecified = false;
 		Shape::Bounds bounds = { };
-		normalizeShape(*shape);
+		shape->normalize();
 
 		bounds = shape->getBounds();
 		int index = shapes.size();
 		struct ShapeSlot* slot = (ShapeSlot*)malloc(sizeof(ShapeSlot));
 		slot->scale = scale;
-		slot->hSizePx = 64.;
-		slot->vSizePx = 64.;
 		slot->shape = shape;
 		shapes.push_back(slot);
 
@@ -417,10 +413,10 @@ LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale){
 }
 LIB_EXPORT bool generateSDFPath( int slotId, double width, double height,  int ox, int oy, double tx, double ty, double range, double _scale) {
 		ShapeSlot* slot = shapes[slotId];
-		Bitmap<float, 1> sdf(slot->hSizePx, slot->vSizePx);
+		Bitmap<float, 1> sdf(width, height);
 		Shape* shape = slot->shape;
 		generateSDF(sdf, *shape, range , Vector2(slot->scale, slot->scale), Vector2(tx, ty));
-		copyGrayBitmapToAtlas(sdf, slot->hSizePx, slot->vSizePx, ox, oy, false);
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, false);
 		return true;
 }
 
