@@ -76,7 +76,7 @@ class GlyphRender implements  Render {
 				g.char = char;
 				g.width = m.width + extendWidth;
 				g.height = m.height+ extendHeight;
-				g.xOffset = -m.offsetX + paddingLeft + Math.ceil(dfRange/2) - 0.5;
+				g.xOffset = -m.offsetX + paddingLeft + Math.ceil(dfRange/2);
 				g.yOffset = m.offsetY + paddingTop + Math.ceil(dfRange/2);
 				g.advance = m.advanceX;
 				g.descent = m.descent;
@@ -95,7 +95,7 @@ class GlyphRender implements  Render {
 		inline function glyphHeight(g:GlyphInfo) return g.height;
 		inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
 		inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-		inline function translateX(g:GlyphInfo) return   g.xOffset ;
+		inline function translateX(g:GlyphInfo) return   g.xOffset - 0.5 ;
 		inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
 
 		switch (config.mode) {
