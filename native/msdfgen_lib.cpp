@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include "msdfgen_lib.h"
 #include "msdfgen/msdfgen.h"
 #include "msdfgen/ext/import-svg.h"
