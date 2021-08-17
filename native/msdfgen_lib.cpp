@@ -365,6 +365,7 @@ LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale){
 		bool scaleSpecified = false;
 		Shape::Bounds bounds = { };
 		shape->normalize();
+        shape->inverseYAxis = true;
 
 		bounds = shape->getBounds();
 		int index = shapes.size();
