@@ -26,9 +26,12 @@ class SvgRender implements Render {
 
 		gi.width = Math.ceil(bounds.r - bounds.l + dfRange );
 		gi.height = Math.ceil(bounds.t - bounds.b + dfRange );
-		gi.xOffset = - Math.floor(bounds.l - dfRange/2);
-		gi.yOffset = - Math.ceil(bounds.b - dfRange/2);
-		var descr = {filename:svgfile, pathName: path, slot:slotIndex};
+
+		gi.xOffset = 0;// - Math.floor(bounds.l - dfRange/2);
+		gi.yOffset = - Math.ceil(bounds.b - bounds.t - dfRange/2);
+		gi.advance = Math.ceil(bounds.r - bounds.l);
+		
+		var descr = {filename:svgfile, pathName: path, slot:slotIndex, bounds:bounds};
 		svgDescrs.set(char, descr);
 		return gi;
 	}
@@ -65,17 +68,18 @@ class SvgRender implements Render {
 		inline function glyphHeight(g:GlyphInfo) return g.height;
 		inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x) ;
 		inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-		inline function translateX(g:GlyphInfo) return  g.xOffset - 0.5 ;
-		inline function translateY(g:GlyphInfo) return g.yOffset + 0.5;
+		inline function translateX(g:GlyphInfo, d:SvgDescr) return  dfRange/2 - d.bounds.l - 0.5 ;
+		inline function translateY(g:GlyphInfo, d:SvgDescr) return dfRange/2 - d.bounds.b + 0.5;
 		for (g in renderGlyphs) {
 			var descr = svgDescrs.get(g.char);
 			if (g.width != 0 && g.height != 0)
-				Msdfgen.generateSDFPath(descr.slot, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), dfRange, 1);
+				Msdfgen.generateSDFPath(descr.slot, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g,descr), translateY(g,descr), dfRange, 1);
 		}
 	}
 }
 typedef SvgDescr = {
 	filename:String,
 	?pathName:String,
+	bounds:Bounds,
 	slot:Int
 }
