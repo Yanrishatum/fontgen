@@ -1,3 +1,5 @@
+rd /q /s bin\hlc
+del native\hl\ammer_msdfgen_lib.hdll
 call vcvars
 @REM @ECHO off
 haxe build-hlc.hxml
