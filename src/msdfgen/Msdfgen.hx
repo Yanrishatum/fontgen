@@ -29,6 +29,8 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	public static function initSvgShape(pathDef:String, fontSize:Int, scale:Float):Int;
 	public static function getBounds(slot:Int):String; 
 	public static function generateSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
+	public static function generateMSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
+	public static function generatePSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
 }
 
 class MsdfgenUtils {

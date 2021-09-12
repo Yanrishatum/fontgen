@@ -57,7 +57,7 @@ class Main {
 				var location = val.split(":");
 				var fileName = location[0];
 				var pathName = location.length > 1 ? location[1] : "";
-				var glyph = rend.reg(code, fileName, pathName);
+				var glyph = rend.reg(code, fileName, pathName, config.mode);
 				glyphs.push(glyph);
 			}
 			
