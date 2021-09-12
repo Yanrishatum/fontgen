@@ -10,6 +10,8 @@ import haxe.xml.Parser;
 class SvgRender implements Render {
 	public var file:String;
 	public var renderGlyphs:Array<GlyphInfo> = [];
+
+	inline static var ENDPOINT_SNAP_RANGE_PROPORTION = 1/16384.;
 	var dfRange = 5.;
 	var glyphMap:Map<Int, GlyphInfo> = new Map();
 	var svgDescrs:Map<Int, SvgDescr> = new Map();
@@ -24,7 +26,8 @@ class SvgRender implements Render {
 		renderGlyphs.push(gi);
 		glyphMap.set(char, gi);
 		var pathDef = loadSvg(svgfile, path);
-		var slotIndex = Msdfgen.initSvgShape(pathDef, 24, 1);
+		var snapRange = calcEndpointSnapRange(svgfile);
+		var slotIndex = Msdfgen.initSvgShape(pathDef, 24, 1, snapRange);
 		var bounds = MsdfgenUtils.getBounds(slotIndex);
 
 		gi.width = Math.ceil(bounds.r - bounds.l + dfRange);
@@ -42,6 +45,14 @@ class SvgRender implements Render {
 		};
 		svgDescrs.set(char, descr);
 		return gi;
+	}
+
+	static function calcEndpointSnapRange(file){
+		var svg:Xml = Parser.parse(File.getContent(file));
+		var root = svg.elementsNamed("svg").next();
+		var w = Std.parseFloat( root.get('width') );
+		var h = Std.parseFloat( root.get('height') );
+		return Math.sqrt(w*w+h*h) * ENDPOINT_SNAP_RANGE_PROPORTION;
 	}
 
 	static function loadSvg(file, pathName) {

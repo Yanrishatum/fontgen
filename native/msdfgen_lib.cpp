@@ -354,9 +354,10 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
  		return &(str.str()[0]);
  }
 
-LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale){
+LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale, double endpointSnapRange){
 		Shape* shape = new Shape;
-		buildShapeFromSvgPath(*shape, path, fontSize*1.4);
+		// buildShapeFromSvgPath(*shape, path, fontSize*1.4);
+		buildShapeFromSvgPath(*shape, path, endpointSnapRange);
 		bool autoFrame = true;
 		Vector2 translate;
 		bool scaleSpecified = false;

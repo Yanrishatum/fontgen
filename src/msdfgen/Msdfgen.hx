@@ -26,7 +26,7 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	public static function generateMSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool, range:Float):Bool;
 	public static function rasterizeGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int):Bool;
 
-	public static function initSvgShape(pathDef:String, fontSize:Int, scale:Float):Int;
+	public static function initSvgShape(pathDef:String, fontSize:Int, scale:Float, endpointSnapRange:Float):Int;
 	public static function getBounds(slot:Int):String; 
 	public static function generateSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
 	public static function generateMSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
