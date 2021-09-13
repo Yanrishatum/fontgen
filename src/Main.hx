@@ -140,7 +140,7 @@ class Main {
 		} else {
 			for (config in configs) {
 				var stamp = ts();
-				var ctx = prepareGlyphs(config);
+				var ctx = createContext(config);
 				buildAtlas(ctx, config);
 				writeFntFile(ctx.pngPath, config, ctx.glyphs, cast ctx.renderers[0]);
 				Msdfgen.unloadFonts();
@@ -468,7 +468,8 @@ class Main {
 			cfg.mode.validate();
 		}
 		if ( cfg.fontSize == null ) throw "Font size should be specified!";
-		if ( cfg.inputs == null ) {
+		if (cfg.svgInput != null ) {
+		} else if ( cfg.inputs == null ) {
 			if (( cfg.input == null || !FileSystem.exists(cfg.input) )
 				&& ( cfg.svgInput == null  )) throw "Path to TTF or SVG file should be specified!";
 			cfg.inputs = [cfg.input];
