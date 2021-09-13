@@ -49,7 +49,7 @@ class Main {
 		var globRenderers = [];
 		
 		inline function prepareSvgGlyphs(config:GenConfig):Ctx {
-			var rend = new SvgRender();
+			var rend = new SvgRender(config);
 			var glyphs:Array<GlyphInfo> = [];
 			for (char in Reflect.fields(config.svgInput)) {
 				var code = char.charCodeAt(0);
@@ -57,7 +57,7 @@ class Main {
 				var location = val.split(":");
 				var fileName = location[0];
 				var pathName = location.length > 1 ? location[1] : "";
-				var glyph = rend.reg(code, fileName, pathName, config.mode);
+				var glyph = rend.reg(code, fileName, pathName);
 				glyphs.push(glyph);
 			}
 			
@@ -208,8 +208,8 @@ class Main {
 				 fontName:"Svg graphics",
 				 bold:false,
 				 italic:false,
-				 baseLine:0,
-				 lineHeight:24,
+				 baseLine:config.fontSize,
+				 lineHeight:config.fontSize,
 			});
 		}
 

@@ -1,6 +1,6 @@
 package;
 
-import DataTypes.SdfMode;
+import DataTypes;
 import haxe.xml.Access;
 import Render;
 import msdfgen.Msdfgen;
@@ -15,19 +15,20 @@ class SvgRender implements Render {
 	var dfRange = 5.;
 	var glyphMap:Map<Int, GlyphInfo> = new Map();
 	var svgDescrs:Map<Int, SvgDescr> = new Map();
-	var mode:SdfMode;
+	var config:GenConfig;
 
-	public function new() {}
+	public function new(config) {
+		this.config = config;
+	}
 
-	public function reg(char:Int, svgfile:String, path = "", sdfMode) {
+	public function reg(char:Int, svgfile:String, path = "") {
 		var gi = new GlyphInfo();
-		this.mode = sdfMode;
 		gi.char = char;
 		renderGlyphs.push(gi);
 		glyphMap.set(char, gi);
 		var pathDef = loadSvg(svgfile, path);
 		var snapRange = calcEndpointSnapRange(svgfile);
-		var slotIndex = Msdfgen.initSvgShape(pathDef, 24, 1, snapRange);
+		var slotIndex = Msdfgen.initSvgShape(pathDef, config.fontSize, 1, snapRange);
 		var bounds = MsdfgenUtils.getBounds(slotIndex);
 
 		gi.width = Math.ceil(bounds.r - bounds.l + dfRange);
@@ -90,7 +91,7 @@ class SvgRender implements Render {
 		inline function translateX(g:GlyphInfo, d:SvgDescr) return  dfRange/2 - d.bounds.l - 0.5 ;
 		inline function translateY(g:GlyphInfo, d:SvgDescr) return dfRange/2 - d.bounds.b + 0.5;
 
-		switch (mode) {
+		switch (config.mode) {
 			case MSDF:
 				for (g in renderGlyphs) {
 					var descr = svgDescrs.get(g.char);
