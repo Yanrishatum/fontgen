@@ -139,6 +139,7 @@ TODO: More detailed
   
   * `build-msdfgen.cmd` compiles msdfgen and uses freetype dependency from vcpkg, so vcpkg should be installed as well as freetype package. And `%vcpkg_path%` env var should point to vcpkg location.
   * `build-msdfgen_lib.cmd` and `compile-hlc.bat` call `vcvars` to raise VS environment so there should be such cmd/bat file available through %path%. In my case it looks like `call "%path_to_VS%\VC\Auxiliary\Build\vcvars32.bat" `.
+  * `%HLPATH%` should point to Hashlink installation.
 * Haxe Libraries:
   * [ammer](https://github.com/Aurel300/ammer/)
   * bin-packing (Haxelib version)
