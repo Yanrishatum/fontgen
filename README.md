@@ -9,6 +9,9 @@ Note that on Windows, HL should see the `msdfgen.dll` and `ammer_msdfgen.hdll`, 
 Warning: Some image viewers do not follow PNG specification properly and show some rasterized images as pure white.
 This is an issue with particular decoder and file itself is correct. Known affected viewers: XNView, FastStone Image Viewer.
 
+## Warning
+Make sure you use 32-bit Hashlink.
+
 ### General usage and config file structure.
 Run tool with: `hl fontgen.hl <input file> [switches]`  
 Input file should contain a JSON object or array of objects describing font rasterization parameters.
