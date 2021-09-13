@@ -113,7 +113,7 @@ See [`test/config.json`](test/config.json) for example config.
 * `-stdin` - Allows to pass json config via stdin. Note that current working directory will be considered as a root path for font lookup.
 * `-sharedatlas` - Enables shared texture for all configs. Spacing settings and textrue filename will be taken from the first config.
 
-### Processor pptions
+### Processor options
 All processor options can be used as switches to enable them on all configurations. For example `-allownonprint`
 
 * `allownonprint` - Enables rasterization of non-printing characters from range U+00 to U+1F plus U+7F (DEL). Disabled by default as to not produce warning about missing glyphs.
