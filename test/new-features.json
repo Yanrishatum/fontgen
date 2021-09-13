@@ -1,0 +1,28 @@
+[
+
+	{
+
+		"inputs": ["ttf/AmaticSC-Regular.ttf"],
+		"output": "output/AmaticSC.fnt",
+		"template": "defaults.json"
+	
+	},
+	{
+
+		"inputs": [ "ttf/NotoSerifJP-Regular.otf"],
+		"output": "output/NotoSerifJP.fnt",
+		"template": "defaults.json"
+	
+	},
+	{
+
+		"inputs": ["ttf/Cardo-Regular.ttf"],
+		"output": "output/Cardo.fnt",
+		"template": "defaults.json"
+	},
+	{
+		"svgInput":{"s":"drawing.svg:star", "d":"drawing.svg:donut", "a":"drawing.svg:a"},
+		"output": "output/svg.fnt",
+		"template": "defaults.json"
+	}
+]

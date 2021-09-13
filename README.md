@@ -40,6 +40,7 @@ Input file should contain a JSON object or array of objects describing font rast
 ```
 * `input` - path to TTF file relative to JSON file. Optional if `inputs` is present.
 * `inputs` - An array of TTF files relative to JSON file. Can be used as fallback fonts in order of appearance. Optional if `input` is present.
+* `svgInput` - Description for generating font with glyphs created from svg shapes. See [SVG input description format](#SVG-input-description-format) for details.
 * `output` - Path to output .fnt file relative to JSON file.
 * `mode` - Describes mode in which glyphs are going to be generated. Possible values are: `msdf`, `sdf`, `psdf` and `raster`.
 MSDF provides best accuracy by utilizing RGB channels, all others produce grayscale image.
@@ -122,6 +123,11 @@ SDF descriptor presents itself as:
 sdf mode=<mode> size=<dfSize>
 ```
 It is put at the end of file, because some parsers depend on ordering of lines and may break if inserted between `info` and `chars` blocks.
+
+### SVG input description format
+Value of `svgInput` parameter should be an object with pairs where key is a character and value is a description of where to get shape for this character appearance.
+Description contains name of svg file and (optional) `id` attribute of path node in svg file. If you edit svg file with Inkscape, you can assign `id` attribute in "XML Editor" panel available trough "edit" menu. One character can be generated from single path node only. Clockwise/counterclockwise direction defines if the path would be hole or fill. Example:
+`{"s":"drawing.svg:star", "d":"drawing.svg:donut", "a":"drawing.svg:a"}`
 
 ## Compilation
 
