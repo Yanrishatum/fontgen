@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include "msdfgen_lib.h"
 #include "msdfgen/msdfgen.h"
+#include "msdfgen/ext/import-svg.h"
 #include "msdfgen/msdfgen-ext.h"
 #include <ft2build.h>
 #include <lodepng.h>
@@ -25,8 +27,13 @@ struct FontSlot {
 	double scale;
 };
 
+struct ShapeSlot {
+	Shape* shape;
+	double scale;
+};
+
 // Haxe struct for font metrics.
-struct FontMetrics {
+struct FontMetricsInternal {
 	int ascent;
 	int descent;
 	int unitsPerEm;
@@ -49,11 +56,10 @@ struct GlyphMetrics {
 FreetypeHandle* ft = NULL;
 FT_Library ft_lib;
 std::vector<FontSlot*> fonts;
+std::vector<ShapeSlot*> shapes;
 
-int fontSize = 24;
 bool enforceR8 = false;
 bool normalizeShapes = false;
-double range = 4.0;
 Bitmap<byte, 4> atlasPixels;
 
 LIB_EXPORT bool wrap_initializeFreetype() {
@@ -69,12 +75,8 @@ LIB_EXPORT void wrap_deinitializeFreetype() {
 	}
 }
 
-LIB_EXPORT void setParameters(double dfRange, int _fontSize) {
-	range = dfRange;
-	fontSize = _fontSize;
-}
 
-LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data) {
+LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data, int fontSize) {
 	FontHandle* msdfHandle = loadFont(ft, filename);
 	if (msdfHandle != NULL) {
 		int index = fonts.size();
@@ -85,7 +87,7 @@ LIB_EXPORT int initFont(char* filename, unsigned char* metrics_data) {
 		slot->scale = (double)fontSize / (double)slot->ft->units_per_EM * 64.;
 		FT_Set_Pixel_Sizes(slot->ft, 0, fontSize);
 		
-		FontMetrics* metrics = reinterpret_cast<FontMetrics*>(metrics_data);
+		FontMetricsInternal* metrics = reinterpret_cast<FontMetricsInternal*>(metrics_data);
 		metrics->ascent = slot->ft->ascender;
 		metrics->descent = slot->ft->descender;
 		metrics->unitsPerEm = slot->ft->units_per_EM;
@@ -194,15 +196,7 @@ void normalizeShape(Shape &shape) {
 	}
 }
 
-LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
-	if (width == 0 || height == 0) return true;
-	
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		Bitmap<float, 1> sdf(width, height);
-		double scale = fonts[slot]->scale;
-		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+inline void copyGrayBitmapToAtlas(Bitmap<float, 1> sdf, int width, int height, int ox, int oy, bool ccw) {
 		oy += height;
 		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
@@ -227,58 +221,9 @@ LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, 
 				}
 			}
 		}
-		return true;
-	}
-	return false;
 }
 
-LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
-	if (width == 0 || height == 0) return true;
-	
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		Bitmap<float, 1> sdf(width, height);
-		double scale = fonts[slot]->scale;
-		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
-		oy += height;
-		if (ccw) {
-			for (int y = height - 1; y >= 0; y--) {
-				byte* it = atlasPixels(ox, oy - y);
-				for (int x = 0; x < width; x++) {
-					byte px = pixelFloatToByte(1.f - *sdf(x, y));
-					*it++ = px;
-					*it++ = px;
-					*it++ = px;
-					*it++ = 0xff;
-				}
-			}
-		} else {
-			for (int y = height - 1; y >= 0; y--) {
-				byte* it = atlasPixels(ox, oy - y);
-				for (int x = 0; x < width; x++) {
-					byte px = pixelFloatToByte(*sdf(x, y));
-					*it++ = px;
-					*it++ = px;
-					*it++ = px;
-					*it++ = 0xff;
-				}
-			}
-		}
-		return true;
-	}
-	return false;
-}
-
-LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw) {
-	if (width == 0 || height == 0) return true;
-	Shape glyph;
-	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
-		normalizeShape(glyph);
-		edgeColoringSimple(glyph, 3, 0);
-		Bitmap<float, 3> msdf(width, height);
-		double scale = fonts[slot]->scale;
-		generateMSDF(msdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+inline void copyColorBitmapToAtlas(Bitmap<float, 3> msdf, int width, int height, int ox, int oy, bool ccw){
 		oy += height;
 		if (ccw) {
 			for (int y = height - 1; y >= 0; y--) {
@@ -301,6 +246,49 @@ LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height,
 				}
 			}
 		}
+
+}
+
+LIB_EXPORT bool generateSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		Bitmap<float, 1> sdf(width, height);
+		double scale = fonts[slot]->scale;
+		generateSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, ccw);
+		return true;
+	}
+	return false;
+}
+
+LIB_EXPORT bool generatePSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		Bitmap<float, 1> sdf(width, height);
+		double scale = fonts[slot]->scale;
+		generatePseudoSDF(sdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, ccw);
+		return true;
+	}
+	return false;
+}
+
+LIB_EXPORT bool generateMSDFGlyph(int slot, int charcode, int width, int height, int ox, int oy, double tx, double ty, bool ccw, double range) {
+	if (width == 0 || height == 0) return true;
+	Shape glyph;
+	if (loadGlyph(glyph, fonts[slot]->font, charcode)) {
+		normalizeShape(glyph);
+		edgeColoringSimple(glyph, 3, 0);
+		Bitmap<float, 3> msdf(width, height);
+		double scale = fonts[slot]->scale;
+		generateMSDF(msdf, glyph, range / scale, scale, Vector2(tx/scale, ty/scale));
+		copyColorBitmapToAtlas(msdf, width, height, ox, oy, ccw);
 		return true;
 	}
 	return false;
@@ -356,6 +344,65 @@ LIB_EXPORT bool rasterizeGlyph(int slot, int charcode, int width, int height, in
 			// TODO: Other pixel modes
 			return false;
 	}
+}
+
+ LIB_EXPORT char* getBounds(int slot){
+ 		Shape* shape = shapes[slot]->shape;
+ 		Shape::Bounds b =  shape->getBounds();
+ 		std::stringstream str;
+ 		str << "{\"l\":" << b.l << ", \"r\":"  << b.r << ", \"t\":" << b.t << ", \"b\":" << b.b << "}";
+ 		return &(str.str()[0]);
+ }
+
+LIB_EXPORT int initSvgShape(const char *path, int fontSize, double scale, double endpointSnapRange){
+		Shape* shape = new Shape;
+		// buildShapeFromSvgPath(*shape, path, fontSize*1.4);
+		buildShapeFromSvgPath(*shape, path, endpointSnapRange);
+		bool autoFrame = true;
+		Vector2 translate;
+		bool scaleSpecified = false;
+		Shape::Bounds bounds = { };
+		shape->normalize();
+        shape->inverseYAxis = true;
+
+		bounds = shape->getBounds();
+		int index = shapes.size();
+		struct ShapeSlot* slot = (ShapeSlot*)malloc(sizeof(ShapeSlot));
+		slot->scale = scale;
+		slot->shape = shape;
+		shapes.push_back(slot);
+
+		Shape* shaper = shapes[index]->shape;
+		Shape::Bounds b =  shaper->getBounds();
+
+		return index;
+}
+LIB_EXPORT bool generateSDFPath( int slotId, double width, double height,  int ox, int oy, double tx, double ty, double range, double _scale) {
+		ShapeSlot* slot = shapes[slotId];
+		Bitmap<float, 1> sdf(width, height);
+		Shape* shape = slot->shape;
+		generateSDF(sdf, *shape, range , Vector2(slot->scale, slot->scale), Vector2(tx, ty));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, false);
+		return true;
+}
+
+LIB_EXPORT bool generateMSDFPath( int slotId, double width, double height,  int ox, int oy, double tx, double ty, double range, double _scale) {
+		ShapeSlot* slot = shapes[slotId];
+		Bitmap<float, 3> sdf(width, height);
+		Shape* shape = slot->shape;
+		edgeColoringSimple(*shape, 3, 0);
+		generateMSDF(sdf, *shape, range , Vector2(slot->scale, slot->scale), Vector2(tx, ty));
+		copyColorBitmapToAtlas(sdf, width, height, ox, oy, false);
+		return true;
+}
+
+LIB_EXPORT bool generatePSDFPath( int slotId, double width, double height,  int ox, int oy, double tx, double ty, double range, double _scale) {
+		ShapeSlot* slot = shapes[slotId];
+		Bitmap<float, 1> sdf(width, height);
+		Shape* shape = slot->shape;
+		generatePseudoSDF(sdf, *shape, range , Vector2(slot->scale, slot->scale), Vector2(tx, ty));
+		copyGrayBitmapToAtlas(sdf, width, height, ox, oy, false);
+		return true;
 }
 
 #ifdef __cplusplus

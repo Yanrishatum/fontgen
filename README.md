@@ -9,6 +9,9 @@ Note that on Windows, HL should see the `msdfgen.dll` and `ammer_msdfgen.hdll`, 
 Warning: Some image viewers do not follow PNG specification properly and show some rasterized images as pure white.
 This is an issue with particular decoder and file itself is correct. Known affected viewers: XNView, FastStone Image Viewer.
 
+## Warning
+Make sure you use 32-bit Hashlink.
+
 ### General usage and config file structure.
 Run tool with: `hl fontgen.hl <input file> [switches]`  
 Input file should contain a JSON object or array of objects describing font rasterization parameters.
@@ -34,11 +37,13 @@ Input file should contain a JSON object or array of objects describing font rast
     "algorithm": String,
     "heuristic": String,
     "useWasteMap": String
-  }
+  },
+  "template":String
 }
 ```
 * `input` - path to TTF file relative to JSON file. Optional if `inputs` is present.
 * `inputs` - An array of TTF files relative to JSON file. Can be used as fallback fonts in order of appearance. Optional if `input` is present.
+* `svgInput` - Description for generating font with glyphs created from svg shapes. See [SVG input description format](#SVG-input-description-format) for details.
 * `output` - Path to output .fnt file relative to JSON file.
 * `mode` - Describes mode in which glyphs are going to be generated. Possible values are: `msdf`, `sdf`, `psdf` and `raster`.
 MSDF provides best accuracy by utilizing RGB channels, all others produce grayscale image.
@@ -55,6 +60,7 @@ MSDF provides best accuracy by utilizing RGB channels, all others produce graysc
 * `padding` - optional and defaults to `0`. Describes extra padding for glyphs on the texture in pixels.
 * `spacing` - optional and defaults to `1`. Describes spacing between glyphs on the texture in pixels.
 * `options` - optional list of extra configuration flags. See below.
+* `template` - optional file name of config containing "default" values which would be inherited if not defined in main config.
 
 #### Packer configuration
 Optional packer configuration allows to fine-tune atlas creation.
@@ -105,8 +111,9 @@ See [`test/config.json`](test/config.json) for example config.
 * `-verbose` - enables all logging.
 * `-help` - Prints [help](src/help.txt) file and exits.
 * `-stdin` - Allows to pass json config via stdin. Note that current working directory will be considered as a root path for font lookup.
+* `-sharedatlas` - Enables shared texture for all configs. Spacing settings and textrue filename will be taken from the first config.
 
-### Processor pptions
+### Processor options
 All processor options can be used as switches to enable them on all configurations. For example `-allownonprint`
 
 * `allownonprint` - Enables rasterization of non-printing characters from range U+00 to U+1F plus U+7F (DEL). Disabled by default as to not produce warning about missing glyphs.
@@ -120,9 +127,19 @@ sdf mode=<mode> size=<dfSize>
 ```
 It is put at the end of file, because some parsers depend on ordering of lines and may break if inserted between `info` and `chars` blocks.
 
+### SVG input description format
+Value of `svgInput` parameter should be an object with pairs where key is a character and value is a description of where to get shape for this character appearance.
+Description contains name of svg file and (optional) `id` attribute of path node in svg file. If you edit svg file with Inkscape, you can assign `id` attribute in "XML Editor" panel available trough "edit" menu. One character can be generated from single path node only. Clockwise/counterclockwise direction defines if the path would be hole or fill. Example:
+`{"s":"drawing.svg:star", "d":"drawing.svg:donut", "a":"drawing.svg:a"}`
+
 ## Compilation
 
 TODO: More detailed
+* Under windows it is possible to use build scripts with following prerequisites:
+  
+  * `build-msdfgen.cmd` compiles msdfgen and uses freetype dependency from vcpkg, so vcpkg should be installed as well as freetype package. And `%vcpkg_path%` env var should point to vcpkg location.
+  * `build-msdfgen_lib.cmd` and `compile-hlc.bat` call `vcvars` to raise VS environment so there should be such cmd/bat file available through %path%. In my case it looks like `call "%path_to_VS%\VC\Auxiliary\Build\vcvars32.bat" `.
+  * `%HLPATH%` should point to Hashlink installation.
 * Haxe Libraries:
   * [ammer](https://github.com/Aurel300/ammer/)
   * bin-packing (Haxelib version)

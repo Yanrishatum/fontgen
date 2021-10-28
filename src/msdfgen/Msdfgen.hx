@@ -12,8 +12,7 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	@:ammer.native("wrap_deinitializeFreetype")
 	public static function deinitializeFreetype():Void;
 	
-	public static function setParameters(dfRange:Float, fontSize:Int):Void;
-	public static function initFont(filename:String, metrics:NoSize<Bytes>):Int;
+	public static function initFont(filename:String, metrics:NoSize<Bytes>, fontSize:Int):Int;
 	public static function unloadFonts():Void;
 	public static function getGlyphMetrics(font:Int, charcode:Int, output:NoSize<Bytes>):Bool;
 	public static function getKerning(font:Int, left:Int, right:Int):Int;
@@ -22,8 +21,26 @@ class Msdfgen extends Library<"msdfgen_lib"> {
 	public static function beginAtlas(width:Int, height:Int, defaultColor:Int, enforceR8:Bool):Void;
 	public static function endAtlas(output:String):Void;
 	
-	public static function generateSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool):Bool;
-	public static function generatePSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool):Bool;
-	public static function generateMSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool):Bool;
+	public static function generateSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool, range:Float):Bool;
+	public static function generatePSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool, range:Float):Bool;
+	public static function generateMSDFGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int, tx:Float, ty:Float, ccw:Bool, range:Float):Bool;
 	public static function rasterizeGlyph(slot:Int, charcode:Int, width:Int, height:Int, x:Int, y:Int):Bool;
+
+	public static function initSvgShape(pathDef:String, fontSize:Int, scale:Float, endpointSnapRange:Float):Int;
+	public static function getBounds(slot:Int):String; 
+	public static function generateSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
+	public static function generateMSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
+	public static function generatePSDFPath(slot:Int, width:Float, height:Float,  ox:Int, oy:Int, tx:Float, ty:Float, range:Float, scale:Float):Bool;
+}
+
+class MsdfgenUtils {
+	public static inline function getBounds(slot:Int):Bounds{
+		return haxe.Json.parse(Msdfgen.getBounds(slot));
+	}
+}
+typedef Bounds = {
+	public var l:Float;
+	public var b:Float;
+	public var r:Float;
+	public var t:Float;
 }

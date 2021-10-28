@@ -12,20 +12,25 @@ enum abstract SdfMode(String) from String to String {
 	
 }
 
-typedef GenConfig = {
+typedef GenConfig = AtlasConfig & {
 	var input:String; // path to ttf
 	var inputs:Array<String>;
-	var output:String; // path to output .fnt
+	var svgInput:Null<Dynamic>;
 	var charset:Array<Dynamic>; // Charset info
 	var fontSize:Null<Int>;
-	var options:Array<String>;
 	var padding: { top: Null<Int>, bottom: Null<Int>, left: Null<Int>, right: Null<Int> };
-	var spacing: { x:Null<Int>, y:Null<Int> };
 	// TODO: Margin
 	var dfSize:Null<Int>;
+	var template:String;
+};
+
+typedef AtlasConfig = {
 	var mode:SdfMode; // Generator mode
 	var packer:PackerConfig;
-};
+	var spacing: { x:Null<Int>, y:Null<Int> };
+	var output:String; // path to output .fnt
+	var options:Array<String>;
+}
 
 typedef PackerConfig = {
 	var size:Null<Int>;

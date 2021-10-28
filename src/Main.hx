@@ -1,3 +1,4 @@
+import haxe.xml.Parser;
 import binpacking.SkylinePacker;
 import binpacking.SimplifiedMaxRectsPacker;
 import binpacking.ShelfPacker;
@@ -11,6 +12,13 @@ import binpacking.MaxRectsPacker;
 import GlyphRender;
 import DataTypes;
 import msdfgen.Msdfgen;
+import Render;
+
+typedef Ctx = {
+	renderers:Array<Render>,
+	glyphs:Array<GlyphInfo>,
+	?pngPath:String
+}
 
 class Main {
 	static inline var SIZE:Int = 4096;
@@ -26,176 +34,152 @@ class Main {
 	
 	public static var globalNonprint:Bool = false;
 	public static var globalr8:Bool = false;
-	
+	public static var sharedAtlas:Bool = false;
+
+	inline static function ts() return haxe.Timer.stamp();
+	inline static function timeStr(ts:Float) return Std.string(Math.round(ts * 1000)) + "ms";
+
 	static function main() {
-		
 		var configs = readInput();
 		
-		inline function ts() return haxe.Timer.stamp();
-		inline function timeStr(ts:Float) return Std.string(Math.round(ts * 1000)) + "ms";
 		
 		var start = ts();
 		Msdfgen.initializeFreetype();
+
+		var globRenderers = [];
 		
-		for (config in configs) {
+		inline function prepareSvgGlyphs(config:GenConfig):Ctx {
+			var rend = new SvgRender(config);
+			var glyphs:Array<GlyphInfo> = [];
+			for (char in Reflect.fields(config.svgInput)) {
+				var code = char.charCodeAt(0);
+				var val:String = Reflect.field(config.svgInput, char);
+				var location = val.split(":");
+				var fileName = location[0];
+				var pathName = location.length > 1 ? location[1] : "";
+				var glyph = rend.reg(code, fileName, pathName);
+				glyphs.push(glyph);
+			}
 			
+			return {renderers:[rend], glyphs:glyphs};
+		}
+
+		inline function prepareGlyphs(config:GenConfig):Ctx {
 			var rasterMode = config.mode == Raster;
-			var dfSize = rasterMode ? 0 : config.dfSize;
-			var halfDF = (dfSize * .5);
-			var fontSize = config.fontSize;
-			
+
 			if (info) {
 				Sys.println("[Info] Rendering mode: " + config.mode);
 				Sys.println("[Info] Font size: " + config.fontSize);
 				if (!rasterMode) Sys.println("[Info] SDF size: " + config.dfSize);
 				Sys.println("[Info] Output format: text .fnt");
 			}
-			
-			Msdfgen.setParameters(dfSize, fontSize);
-			
+
 			var stamp = ts();
-			var renderers:Array<GlyphRender> = [];
+			var renderers:Array<Render> = [];
 			for ( inp in config.inputs ) {
 				if (info) Sys.println("[Info] TTF: " + inp);
-				renderers.push(new GlyphRender(inp));
+				renderers.push(new GlyphRender(inp, config));
 			}
 			var ttfParse = ts();
 			if (timings) Sys.println("[Timing] Parsed ttf: " + timeStr(ttfParse - stamp));
-			
-			var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
-			// Find all corresponding glyphs to render.
-			var missing:Array<Int> = [];
-			var glyphs:Array<GlyphInfo> = [];
-			var inserted:Array<Int> = [];
-			var skipNonprint:Bool = config.options.indexOf("allownonprint") == -1 && !globalNonprint;
-			var charsets = Charset.parse(config.charset);
-			var countMissing = charsets.indexOf(Charset.EVERYTHING) == -1;
-			for ( cset in Charset.parse(config.charset) ) {
-				for (char in cset) {
-					if (skipNonprint && Charset.NONPRINTING.contains(char)) continue;
-					if (inserted.indexOf(char) != -1) continue; // Already rendering with another charset.
-					var found = false;
-					for (renderer in renderers) {
-						var glyph = renderer.get(char);
-						if (glyph == null) continue;
-						glyphs.push(glyph);
-						renderer.renderGlyphs.push(glyph);
-						found = true;
-						inserted.push(char);
-						break;
-					}
-					if (countMissing && !found) missing.push(char);
-				}
-			}
-			
+
+			var glyphs:Array<GlyphInfo> = fillGlyphs(config, renderers, ttfParse);
+			return {renderers:renderers, glyphs:glyphs};
+		}
+
+		inline function createContext(config:GenConfig):Ctx {
+			return if (config.svgInput != null)
+				prepareSvgGlyphs(config);
+			else 
+				prepareGlyphs(config);
+		}
+
+		inline function buildAtlas(ctx:Ctx, config:AtlasConfig){
 			var charsetProcess = ts();
-			if ((warnings || printMissing) && missing.length != 0) {
-				Sys.println('[Warn] Could not locate ${missing.length} glyphs!');
-				if (printMissing) {
-					Sys.print(missing[0] + ": " + String.fromCharCode(missing[0]));
-					var i = 1, l = missing.length;
-					while (i < l) {
-						var char = missing[i++];
-						Sys.print(", " + char + ": " + String.fromCharCode(char));
-					}
-					Sys.print("\n");
-				}
-			}
-			if (info) Sys.println('[Info] Rendering ${inserted.length} glyphs');
-			if (timings) Sys.println("[Timing] Glyph lookup: " + timeStr(charsetProcess - ttfParse));
-			
-			var extendWidth = config.padding.left + config.padding.right + dfSize + config.spacing.x;
-			var extendHeight = config.padding.top + config.padding.bottom + dfSize + config.spacing.y;
-			
-			packGlyphs(config.packer, glyphs, fontSize, extendWidth, extendHeight);
-			
-			extendWidth -= config.spacing.x;
-			extendHeight -= config.spacing.y;
-			
+			packGlyphs(config.packer, ctx.glyphs, config.spacing.x, config.spacing.y);
+
 			var glyphPacking = ts();
 			if (info) Sys.println('[Info] Atlas size: ${atlasWidth}x${atlasHeight}');
 			if (timings) Sys.println("[Timing] Glyph packing: " + timeStr(glyphPacking - charsetProcess));
-			
-			Msdfgen.beginAtlas(atlasWidth, atlasHeight, (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000, rasterR8);
-			var paddingLeft = config.padding.left;
-			var paddingTop = config.padding.top;
-			var paddingBottom = config.padding.bottom;
-			var dfCorrX, dfCorrY;
-			if (rasterMode) {
-				dfCorrX = halfDF;
-				dfCorrY = halfDF;
-			} else {
-				dfCorrX = halfDF - 0.5;
-				dfCorrY = halfDF - 0.5;
+
+			ctx.pngPath = Path.withExtension(config.output, "png");
+			renderAtlas(ctx.pngPath, ctx.renderers, config);
+
+			var glyphRendering = ts();
+			if (info) Sys.println("[Info] Writing PNG file to " + ctx.pngPath);
+			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
+		}
+
+		if (sharedAtlas) {
+			var sharedCfg = configs[0];
+			var ctxs = [];
+			for (config in configs) {
+				var ctx = createContext(config);
+				ctxs.push(ctx);
 			}
-			
-			for (renderer in renderers) {
-				if (renderer.renderGlyphs.length == 0) continue;
-				if (info)
-					Sys.println("[Info] Started rendering glyphs from " + renderer.file);
-				
-				
-				inline function glyphWidth(g:GlyphInfo) return g.width + extendWidth;
-				inline function glyphHeight(g:GlyphInfo) return g.height + extendHeight;
-				inline function canvasX(g:GlyphInfo) return Std.int(g.rect.x);
-				inline function canvasY(g:GlyphInfo) return Std.int(g.rect.y);
-				inline function translateX(g:GlyphInfo) return Math.ceil(halfDF) - 0.5 - g.xOffset + paddingLeft;
-				inline function translateY(g:GlyphInfo) return Math.floor(halfDF) + 0.5 - g.descent + paddingBottom;
-				
-				switch (config.mode) {
-					case MSDF:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateMSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
-						}
-					case SDF:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.generateSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
-						}
-					case PSDF:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.generatePSDFGlyph(g.renderer.slot, g.char, glyphWidth(g), glyphHeight(g), canvasX(g), canvasY(g), translateX(g), translateY(g), g.isCCW);
-						}
-					case Raster:
-						for (g in renderer.renderGlyphs) {
-							if (g.width != 0 && g.height != 0)
-								Msdfgen.rasterizeGlyph(g.renderer.slot, g.char, g.width, g.height, canvasX(g) + paddingLeft, canvasY(g) + paddingTop);
-						}
+
+			var mergedCtxs:Ctx = {
+				renderers: [],
+				glyphs:[],
+				pngPath:Path.withExtension(sharedCfg.output, "png")
+			}
+			for (ctx in ctxs) {
+				for (r in ctx.renderers)
+					mergedCtxs.renderers.push(r);
+				for (r in ctx.glyphs)
+					mergedCtxs.glyphs.push(r);
+			}
+			buildAtlas(mergedCtxs, configs[0]);
+			for (i in 0...configs.length) {
+				var cfg:GenConfig = configs[i];
+				var ctx = ctxs[i];
+				cfg.spacing = sharedCfg.spacing;
+				writeFntFile(mergedCtxs.pngPath, cfg, ctx.glyphs, cast ctx.renderers[0]);
+			}
+			Msdfgen.unloadFonts();
+		} else {
+			for (config in configs) {
+				var stamp = ts();
+				var ctx = createContext(config);
+				buildAtlas(ctx, config);
+				writeFntFile(ctx.pngPath, config, ctx.glyphs, cast ctx.renderers[0]);
+				Msdfgen.unloadFonts();
+				if (timings) {
+					var ttfGen = ts();
+					Sys.println("[Timing] Total config processing time: " + timeStr(ttfGen - stamp));
 				}
 			}
-			
-			var pngPath = Path.withExtension(config.output, "png");
-			Msdfgen.endAtlas(pngPath);
-			var glyphRendering = ts();
-			if (info) Sys.println("[Info] Writing PNG file to " + pngPath);
-			if (timings) Sys.println("[Timing] Glyph rendering: " + timeStr(glyphRendering - glyphPacking));
-			
-			// TODO: Optimize: Start building file right away.
-			var file = new FntFile(config, renderers[0]);
-			
-			file.texture = Path.withoutDirectory(pngPath);
-			file.textureWidth = atlasWidth;
-			file.textureHeight = atlasHeight;
-			
-			for (g in glyphs) {
-				file.chars.push({
-					id: g.char,
-					x: Std.int(g.rect.x),
-					y: Std.int(g.rect.y),
-					w: g.width + extendWidth,
-					h: g.height + extendHeight,
-					xa: g.advance,
-					xo: g.xOffset - paddingLeft - Math.ceil(halfDF),
-					yo: (file.base - g.yOffset) - paddingTop - Math.ceil(halfDF),
-				});
-			}
-			
-			final len = inserted.length;
+		}
+		
+		Msdfgen.deinitializeFreetype();
+		if (timings && configs.length > 1) {
+			Sys.println("[Timing] Total work time: " + timeStr(ts() - start));
+		}
+	}
+
+	static function renderAtlas(pngPath, renderers:Array<Render>, config:AtlasConfig) {
+		var rasterR8:Bool = globalr8 || config.options.indexOf("r8raster") != -1;
+		var rasterMode = config.mode == Raster;
+		var bgColor = (rasterMode && !rasterR8) ? 0x00ffffff : 0xff000000;
+		Msdfgen.beginAtlas(atlasWidth, atlasHeight, bgColor, rasterR8);
+
+		for (renderer in renderers) {
+			if (renderer.renderGlyphs.length == 0)
+				continue;
+			if (info)
+				Sys.println("[Info] Started rendering glyphs from " + renderer.file);
+			renderer.renderToAtlas();
+		}
+
+		Msdfgen.endAtlas(pngPath);
+	}
+
+	static function writeFntFile(pngPath, config, glyphs:Array<GlyphInfo>, renderer:Render){
+		function addKerning(file, glyphs:Array<GlyphInfo>, renderer:GlyphRender) {
+			final len = glyphs.length;
 			for (i in 0...len) {
-				var left = glyphs[i];
-				var slot = left.renderer.slot;
+			var left = glyphs[i];
+			var slot = left.renderer.slot;
 				for (j in (i+1)...len) {
 					var right = glyphs[j];
 					if (right.renderer.slot == slot) {
@@ -209,26 +193,52 @@ class Main {
 						}
 					}
 				}
-			}
-			
-			Msdfgen.unloadFonts();
-			File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
-			
-			var ttfGen = ts();
-			if (timings) {
-				Sys.println("[Timing] FNT generation: " + timeStr(ttfGen - glyphRendering));
-				Sys.println("[Timing] Total config processing time: " + timeStr(ttfGen - stamp));
-			}
-			
+			}	
 		}
-		
-		Msdfgen.deinitializeFreetype();
-		if (timings && configs.length > 1) {
-			Sys.println("[Timing] Total work time: " + timeStr(ts() - start));
+
+		// TODO: Optimize: Start building file right away.
+		var glyphRendering = ts();
+		var file:FntFile;
+		if (Std.isOfType(renderer, GlyphRender)) {
+			var r:GlyphRender = cast renderer;
+			file = new FntFile(config, r);
+			addKerning(file, glyphs, r);
+		} else {
+			file = new FntFile(config, {
+				 fontName:"Svg graphics",
+				 bold:false,
+				 italic:false,
+				 baseLine:config.fontSize,
+				 lineHeight:config.fontSize,
+			});
 		}
+
+		file.texture = Path.withoutDirectory(pngPath);
+		file.textureWidth = atlasWidth;
+		file.textureHeight = atlasHeight;
+
+		for (g in glyphs) {
+			file.chars.push({
+				id: g.char,
+				x: Std.int(g.rect.x),
+				y: Std.int(g.rect.y),
+				w: g.width ,
+				h: g.height ,
+				xa: g.advance,
+				xo: g.xOffset,
+				yo: (file.base - g.yOffset),
+			});
+		}
+
+		File.saveContent(Path.withExtension(config.output, "fnt"), file.writeString());
+		var ttfGen = ts();
+		if (timings) {
+			Sys.println("[Timing] FNT generation: " + timeStr(ttfGen - glyphRendering));
+		}
+
 	}
-	
-	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, fontSize:Int, extendWidth:Int, extendHeight:Int) {
+
+	static function packGlyphs(config:PackerConfig, glyphs:Array<GlyphInfo>, extendWidth:Int, extendHeight:Int) {
 		var inverse = config.sort.charCodeAt(0) == '-'.code;
 		var sortAlgo = switch (inverse ? config.sort.substr(1) : config.sort) {
 			case "width": widthSort;
@@ -291,6 +301,50 @@ class Main {
 			atlasHeight = yMax;
 		}
 	}
+
+	static function fillGlyphs(config:GenConfig, renderers:Array<Render>, lastStamp:Float) {
+		// Find all corresponding glyphs to render.
+		var missing:Array<Int> = [];
+		var glyphs:Array<GlyphInfo> = [];
+		var inserted:Array<Int> = [];
+		var skipNonprint:Bool = config.options.indexOf("allownonprint") == -1 && !globalNonprint;
+		var charsets = Charset.parse(config.charset);
+		var countMissing = charsets.indexOf(Charset.EVERYTHING) == -1;
+		for ( cset in Charset.parse(config.charset) ) {
+			for (char in cset) {
+				if (skipNonprint && Charset.NONPRINTING.contains(char)) continue;
+				if (inserted.indexOf(char) != -1) continue; // Already rendering with another charset.
+				var found = false;
+				for (renderer in renderers) {
+					var glyph = renderer.get(char);
+					if (glyph == null) continue;
+					glyphs.push(glyph);
+					renderer.renderGlyphs.push(glyph);
+					found = true;
+					inserted.push(char);
+					break;
+				}
+				if (countMissing && !found) missing.push(char);
+			}
+		}
+
+		var charsetProcess = ts();
+		if ((warnings || printMissing) && missing.length != 0) {
+			Sys.println('[Warn] Could not locate ${missing.length} glyphs!');
+			if (printMissing) {
+				Sys.print(missing[0] + ": " + String.fromCharCode(missing[0]));
+				var i = 1, l = missing.length;
+				while (i < l) {
+					var char = missing[i++];
+					Sys.print(", " + char + ": " + String.fromCharCode(char));
+				}
+				Sys.print("\n");
+			}
+		}
+		if (info) Sys.println('[Info] Rendering ${inserted.length} glyphs');
+		if (timings) Sys.println("[Timing] Glyph lookup: " + timeStr(charsetProcess - lastStamp));
+		return glyphs;
+	}
 	
 	static function toPOT(v:Int):Int {
 		// https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
@@ -336,6 +390,8 @@ class Main {
 					globalNonprint = true;
 				case "-r8raster":
 					globalr8 = true;
+				case "-sharedatlas":
+					sharedAtlas = true;
 				case "-help":
 					printHelp();
 				case "-stdin":
@@ -380,6 +436,7 @@ class Main {
 		if (Std.is(cfg, Array)) {
 			var arr:Array<GenConfig> = cfg;
 			for (conf in arr) {
+				fillTemplate(conf);
 				fillDefaults(conf);
 			}
 			return arr;
@@ -387,16 +444,34 @@ class Main {
 			return [fillDefaults(cfg)];
 		}
 	}
+
+	static function fillTemplate(cfg:GenConfig) {
+		if (cfg.template == null)
+			return;
+		if (!FileSystem.exists(cfg.template)) {
+			Sys.println('[Warn] template ${cfg.template} not found');
+			return;
+		}
+		var template = Json.parse (File.getContent(cfg.template));
+		for (key in Reflect.fields(template)) {
+			if (!Reflect.hasField(cfg, key)) {
+				Reflect.setField(cfg, key, Reflect.field(template, key));
+			}
+		}
+	}
 	
 	static function fillDefaults(cfg:GenConfig):GenConfig {
+
 		if ( cfg.mode == null ) cfg.mode = MSDF;
 		else {
 			cfg.mode = (cfg.mode:String).toLowerCase();
 			cfg.mode.validate();
 		}
 		if ( cfg.fontSize == null ) throw "Font size should be specified!";
-		if ( cfg.inputs == null ) {
-			if ( cfg.input == null || !FileSystem.exists(cfg.input) ) throw "Path to TTF file should be specified!";
+		if (cfg.svgInput != null ) {
+		} else if ( cfg.inputs == null ) {
+			if (( cfg.input == null || !FileSystem.exists(cfg.input) )
+				&& ( cfg.svgInput == null  )) throw "Path to TTF or SVG file should be specified!";
 			cfg.inputs = [cfg.input];
 		} else {
 			if ( cfg.input != null ) cfg.inputs.unshift(cfg.input);
@@ -453,6 +528,8 @@ class Main {
 		
 		return cfg;
 	}
+
+
 	
 	static function widthSort(a:GlyphInfo, b:GlyphInfo):Int
 	{
