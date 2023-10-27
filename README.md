@@ -146,13 +146,21 @@ TODO: More detailed
 * Use MSVC in x86 mode, because ammer/hl don't like x64.
 * Compile msdfgen in `native/msdfgen`  
 Windows note: when using `cmake` it may fail at finding `freetype` lib. It's includes and .lib files are located in `native/msdfgen/freetype/` directory.
-* Compile ammer library in `native`  
-Mac/Linux note: Makefile is not valid, as it should also point at compiled `msdfgen.so/dylib` and `freetype.so/dylib`. Feel free to PR fixes, as I'm not using those OS ;)
-* Run `build-hl.hxml` to compile hdll and the tool.  
-Windows note: Make sure you are running in msvc envrionment, sicne ammer needs it to compile .hdll file.  
+* Compile ammer library in `native`
+* Run `build-hl.hxml` to compile hdll and the tool.
+Windows note: Make sure you are running in msvc envrionment, sicne ammer needs it to compile .hdll file.
 Ammer note: You probably will need to point at hashlink includes and lib files with `-D ammer.hl.hlInclude=<path-to-hashlink>/include -D ammer.hl.hlLibrary=<path-to-hashlink>`, see ammer lib for more details.
 * Put `msdfgen.dll` from `native` and `ammer_msdfgen.hdll` from `native/hl` near `bin/fontgen.hl`
 * You're good to go.
+
+### MacOS
+- setup ammer using git. Known working commit - `b922a96`
+- clone repo recursively, or run `git submodule init && git submodule update` after cloning the repo
+- run `build-msdfgen.sh`. This should build all the object file needed and the dylib needed
+- run `haxe build-hl.hxml` to compile hdll
+- copy `native/libmsdfgen_lib.dylib` to `./bin/`
+- run `hl fontgen.hl` from the bin folder and it should work
+
 
 # License
 * Source code is licensed under MIT

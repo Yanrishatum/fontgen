@@ -8,10 +8,10 @@
 all: libmsdfgen_lib.dylib msdfgen_lib.o
 
 libmsdfgen_lib.dylib: msdfgen_lib.o
-	g++ -dynamiclib -fPIC -Lmsdfgen -lfreetype -lmsdfgen -o libmsdfgen_lib.dylib msdfgen_lib.o lodepng.o tinyxml2.o 
+	g++ -dynamiclib -fPIC -Lmsdfgen -lfreetype -lmsdfgen -lmsdfgen-ext -o libmsdfgen_lib.dylib msdfgen_lib.o lodepng.o tinyxml2.o
 
 msdfgen_lib.o: msdfgen_lib.cpp
-	g++ -c -Imsdfgen/freetype/include -Imsdfgen/include -g msdfgen_lib.cpp msdfgen/lib/lodepng.cpp msdfgen/lib/tinyxml2.cpp 
+	g++ -c -Imsdfgen/freetype/include -Imsdfgen/include -g msdfgen_lib.cpp msdfgen/lib/lodepng.cpp msdfgen/lib/tinyxml2.cpp
 
 clean:
 	rm libmsdfgen_lib.dylib msdfgen_lib.o lodepng.o tinyxml2.o
