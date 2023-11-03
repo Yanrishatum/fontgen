@@ -59,7 +59,7 @@ class FntFile {
 			'chars count=${chars.length}'
 		];
 		for (char in chars) {
-			lines.push('char id=${char.id} x=${char.x} y=${char.y} width=${char.w} height=${char.h} xoffset=${char.xo} yoffset=${char.yo} xadvance=${char.xa} page=0 chnl=15');
+			lines.push('char id=${char.id} x=${char.x} y=${char.y} width=${char.w} height=${char.h} xoffset=${-char.xo} yoffset=${char.yo} xadvance=${char.xa} page=0 chnl=15');
 		}
 		lines.push('kernings count=${kernings.length}');
 		for (kern in kernings) {
